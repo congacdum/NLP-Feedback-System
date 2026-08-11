@@ -1,0 +1,99 @@
+{
+  "target": 3000,
+  "materialized": 3000,
+  "category_counts": {
+    "Mẹ & Bé / Đồ chơi": 600,
+    "Điện tử": 600,
+    "Thời trang": 600,
+    "Sức khỏe & Làm đẹp": 600,
+    "Nhà cửa & Đời sống": 600
+  },
+  "products_with_image_path": 2814,
+  "products_without_image_path": 186,
+  "review_candidates": 57115,
+  "price_policy": "deterministic category-aware mock price for UI/filter/sort only; never upstream Lazada price or NLP feature",
+  "price_points": {
+    "Mẹ & Bé / Đồ chơi": [
+      49000,
+      79000,
+      99000,
+      119000,
+      149000,
+      199000,
+      249000,
+      299000,
+      399000,
+      499000,
+      699000,
+      899000,
+      1290000
+    ],
+    "Điện tử": [
+      199000,
+      299000,
+      499000,
+      699000,
+      899000,
+      1290000,
+      1590000,
+      1990000,
+      2990000,
+      3990000,
+      4990000,
+      6990000,
+      8990000,
+      11990000
+    ],
+    "Thời trang": [
+      79000,
+      99000,
+      119000,
+      149000,
+      199000,
+      249000,
+      299000,
+      399000,
+      499000,
+      699000,
+      899000
+    ],
+    "Sức khỏe & Làm đẹp": [
+      49000,
+      79000,
+      99000,
+      149000,
+      199000,
+      249000,
+      299000,
+      399000,
+      499000,
+      699000,
+      899000,
+      1290000,
+      1499000
+    ],
+    "Nhà cửa & Đời sống": [
+      59000,
+      79000,
+      99000,
+      149000,
+      199000,
+      299000,
+      399000,
+      499000,
+      699000,
+      899000,
+      1290000,
+      1990000,
+      2990000,
+      3990000
+    ]
+  },
+  "remote_image_validation": {
+    "requested": true,
+    "sampled": 40,
+    "valid": 39,
+    "invalid": 1
+  },
+  "source": "trucmtnguyen/multimodal-product-reviews-lazada"
+}

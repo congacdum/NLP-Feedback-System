@@ -1,0 +1,68 @@
+{% extends "seller_base.html" %}
+{% block title %}Tổng quan · Seller{% endblock %}
+{% block header %}
+<div class="eyebrow"><span class="eyebrow-dot"></span> Seller Center</div>
+<h1>Tổng quan</h1>
+<p class="muted">Insight được tổng hợp từ kết quả ABSA đã lưu trong database — dashboard không chạy model lại.</p>
+{% endblock %}
+{% block content %}
+<div class="metric-grid animate-fade-in-up">
+    <div class="metric"><small>Tổng feedback</small><strong>{{ summary.total_feedback }}</strong></div>
+    <div class="metric"><small>Rating trung bình</small><strong>{{ '%.2f'|format(summary.average_rating) }}</strong></div>
+    <div class="metric"><small>Lượt nhắc tiêu cực</small><strong class="sent-negative">{{ summary.negative_mentions }}</strong></div>
+    <div class="metric"><small>Khía cạnh được nói nhiều</small><strong style="font-size:24px">{{ summary.most_reported_aspect_vi }}</strong></div>
+</div>
+<div class="panel-grid" style="margin-top:18px">
+    <section class="panel animate-fade-in-up" style="animation-delay:.1s">
+        <h2>Khía cạnh × cảm xúc</h2>
+        {% for row in matrix %}
+        <div class="aspect-row">
+            <span>{{ row.aspect_vi }}</span>
+            <div class="stackbar" title="{{ row.total }} lượt đề cập">
+                <span class="bar-pos" style="width:{{ row.percentages.positive }}%"></span>
+                <span class="bar-neu" style="width:{{ row.percentages.neutral }}%"></span>
+                <span class="bar-neg" style="width:{{ row.percentages.negative }}%"></span>
+                <span class="bar-mix" style="width:{{ row.percentages.mixed }}%"></span>
+            </div>
+            <span class="muted">{{ row.total }}</span>
+        </div>
+        {% endfor %}
+        <div class="stackbar-legend">
+            <span class="legend-item"><span class="legend-dot" style="background:var(--positive)"></span>Tích cực</span>
+            <span class="legend-item"><span class="legend-dot" style="background:#94a3b8"></span>Trung tính</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--negative)"></span>Tiêu cực</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--mixed)"></span>Hỗn hợp</span>
+        </div>
+    </section>
+    <section class="panel animate-fade-in-up" style="animation-delay:.2s">
+        <h2>Sản phẩm cần chú ý</h2>
+        {% for p in products %}
+        <div class="attention-item">
+            <b>{{ p.name }}</b>
+            <div class="muted">{{ p.feedback_count }} feedback · <span class="sent-negative">{{ p.negative_mentions }} lượt nhắc tiêu cực</span></div>
+        </div>
+        {% else %}
+        <p class="muted">Chưa có feedback.</p>
+        {% endfor %}
+    </section>
+</div>
+<section class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.3s">
+    <h2>Feedback gần đây</h2>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Sản phẩm</th><th>Rating</th><th>Nội dung</th><th>ABSA</th><th></th></tr></thead>
+            <tbody>
+                {% for r in recent %}
+                <tr>
+                    <td><b>{{ r.product.name }}</b></td>
+                    <td>★ {{ r.rating }}</td>
+                    <td>{{ r.text_raw[:90] }}</td>
+                    <td>{% for a in r.analyses %}<span class="analysis-chip sent-{{ a.sentiment }}">{{ aspect_vi[a.aspect] }} · {{ sentiment_vi[a.sentiment] }}</span>{% endfor %}</td>
+                    <td><a href="/seller/feedback/{{ r.id }}" class="table-link">Xem →</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

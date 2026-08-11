@@ -1,0 +1,64 @@
+{
+  "total_samples": 191,
+  "split_counts": {
+    "train": 130,
+    "dev": 27,
+    "test": 34
+  },
+  "source_distribution": {
+    "project_demo_fixture": 191
+  },
+  "aspect_distribution": {
+    "product_quality": 61,
+    "delivery": 49,
+    "customer_service": 42,
+    "packaging": 42,
+    "price": 42,
+    "other": 22
+  },
+  "sentiment_distribution": {
+    "positive": 97,
+    "neutral": 42,
+    "negative": 91,
+    "mixed": 28
+  },
+  "aspect_sentiment": {
+    "product_quality#positive": 26,
+    "product_quality#neutral": 9,
+    "product_quality#negative": 20,
+    "product_quality#mixed": 6,
+    "delivery#positive": 18,
+    "delivery#neutral": 5,
+    "delivery#negative": 22,
+    "delivery#mixed": 4,
+    "customer_service#positive": 15,
+    "customer_service#neutral": 8,
+    "customer_service#negative": 12,
+    "customer_service#mixed": 7,
+    "packaging#positive": 15,
+    "packaging#neutral": 8,
+    "packaging#negative": 15,
+    "packaging#mixed": 4,
+    "price#positive": 15,
+    "price#neutral": 8,
+    "price#negative": 15,
+    "price#mixed": 4,
+    "other#positive": 8,
+    "other#neutral": 4,
+    "other#negative": 7,
+    "other#mixed": 3
+  },
+  "multi_aspect_rate": 0.28272251308900526,
+  "mixed_annotation_count": 28,
+  "no_aspect_count": 8,
+  "review_length_tokens": {
+    "min": 0,
+    "median": 14,
+    "mean": 13.397905759162304,
+    "max": 21
+  },
+  "duplicate_count": 0,
+  "duplicate_groups": [],
+  "near_duplicate_count": 0,
+  "near_duplicate_note": "bounded token-Jaccard scan over first 191 rows; use check_dataset.py for strict cross-split leakage"
+}

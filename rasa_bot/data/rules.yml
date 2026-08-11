@@ -1,0 +1,42 @@
+version: "3.1"
+rules:
+  - rule: Chào hỏi
+    steps:
+      - intent: greet
+      - action: utter_greet
+  - rule: Hỏi sản phẩm
+    steps:
+      - intent: ask_product
+      - action: utter_ask_product
+  - rule: Bắt đầu tiếp nhận feedback
+    steps:
+      - or:
+          - intent: submit_feedback
+          - intent: report_problem
+      - action: action_analyze_feedback
+  - rule: Xác nhận hoặc chỉnh feedback
+    steps:
+      - or:
+          - intent: affirm
+          - intent: deny
+      - action: action_confirm_feedback
+  - rule: Ghi nhận rating
+    steps:
+      - intent: provide_rating
+      - action: action_capture_rating
+  - rule: Yêu cầu hỗ trợ
+    steps:
+      - intent: request_support
+      - action: action_handle_support
+  - rule: Ghi nhận liên hệ có consent
+    steps:
+      - intent: provide_contact
+      - action: action_capture_contact
+  - rule: Tạm biệt
+    steps:
+      - intent: goodbye
+      - action: utter_goodbye
+  - rule: Fallback
+    steps:
+      - intent: nlu_fallback
+      - action: utter_fallback

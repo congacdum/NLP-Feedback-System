@@ -1,0 +1,7 @@
+-r requirements.txt
+torch>=2.5
+transformers>=4.48,<5
+sentencepiece>=0.2
+py_vncorenlp>=0.1.4
+matplotlib>=3.8,<4
+pandas>=2.2,<3

@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      args:
+        REQUIREMENTS_FILE: ${REQUIREMENTS_FILE:-requirements.txt}
+    ports:
+      - "8080:8000"
+    environment:
+      APP_SECRET: ${APP_SECRET:-local-demo-change-me}
+      DATABASE_URL: sqlite:////app/data/app.db
+      NLP_BACKEND: ${NLP_BACKEND:-demo}
+      DEV_DEMO_CATALOG: ${DEV_DEMO_CATALOG:-false}
+      TRANSFORMER_ARTIFACT: ${TRANSFORMER_ARTIFACT:-}
+      EVALUATION_ARTIFACT: ${EVALUATION_ARTIFACT:-}
+      VNCORENLP_DIR: ${VNCORENLP_DIR:-}
+      PRODUCT_HF_BASE: ${PRODUCT_HF_BASE:-https://huggingface.co/datasets/trucmtnguyen/multimodal-product-reviews-lazada/resolve/main/}
+      RASA_URL: http://rasa:5005
+    volumes:
+      - ./data:/app/data
+      - ./model_artifacts:/app/model_artifacts:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  rasa:
+    image: rasa/rasa:3.6.20-full
+    profiles: ["rasa"]
+    working_dir: /app
+    volumes:
+      - ./rasa_bot:/app
+    command: ["run", "--enable-api", "--cors", "*", "--port", "5005", "--endpoints", "endpoints.yml", "--credentials", "credentials.yml"]
+    depends_on:
+      - rasa-actions
+
+  rasa-actions:
+    image: rasa/rasa-sdk:3.6.2
+    profiles: ["rasa"]
+    working_dir: /app
+    environment:
+      APP_INTERNAL_URL: http://app:8000
+    volumes:
+      - ./rasa_bot/actions:/app/actions
+
+volumes:
+  feedback_data:

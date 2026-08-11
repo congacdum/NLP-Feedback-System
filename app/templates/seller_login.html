@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Seller Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/app.css?v=20260810-premium-v1">
+</head>
+<body>
+<div class="auth-shell">
+    <div class="auth-card animate-fade-in-up">
+        <div class="auth-card-accent"></div>
+        <div class="eyebrow"><span class="eyebrow-dot"></span> Seller Center</div>
+        <h1>Đăng nhập</h1>
+        <p class="muted">Khu vực quản trị feedback và phân tích NLP.</p>
+        {% if error %}<div class="alert">{{ error }}</div>{% endif %}
+        <form method="post" action="/seller/auth/login">
+            <label>Email</label>
+            <input class="field" style="width:100%" type="email" name="email" required>
+            <label>Mật khẩu</label>
+            <input class="field" style="width:100%" type="password" name="password" required>
+            <button class="btn btn-dark" style="width:100%;margin-top:18px">Vào Seller Center</button>
+        </form>
+        <p class="muted" style="margin-top:16px;font-size:13px">Demo: seller@example.com / seller123</p>
+        <p><a href="/">← Quay lại cửa hàng</a></p>
+    </div>
+</div>
+</body>
+</html>

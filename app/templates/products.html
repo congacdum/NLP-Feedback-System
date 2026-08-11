@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Sản phẩm · NLP Feedback Store{% endblock %}
+{% block content %}
+<main class="section bg-gray-50 min-h-screen py-10" id="catalog-results">
+  <div class="container max-w-7xl mx-auto px-6">
+    <div class="section-head animate-fade-in-up mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div>
+        <div class="eyebrow text-sm font-bold text-indigo-600 tracking-wider uppercase mb-2">Catalog</div>
+        <h2 class="text-3xl font-extrabold text-gray-900">Danh sách sản phẩm</h2>
+        <p class="muted text-gray-500 mt-2 font-medium">{{ listing.total }} sản phẩm <span class="mx-2">•</span> 20 sản phẩm mỗi trang</p>
+      </div>
+    </div>
+    
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-10 animate-fade-in-up" style="animation-delay:.1s">
+        <form class="filter-bar flex flex-wrap gap-3 items-center" method="get" action="/products">
+          <div class="relative flex-grow min-w-[200px]">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="field w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" name="q" placeholder="Tìm sản phẩm..." value="{{ filters.q }}">
+          </div>
+          <select class="field px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium" name="category"><option value="">Tất cả danh mục</option>{% for c in categories %}<option value="{{ c.name }}" {% if filters.category==c.name %}selected{% endif %}>{{ c.name }} ({{ c.count }})</option>{% endfor %}</select>
+          <div class="flex items-center gap-2">
+              <input class="field w-28 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" type="number" name="min_price" placeholder="Giá từ" value="{{ filters.min_price or '' }}">
+              <span class="text-gray-400">-</span>
+              <input class="field w-28 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" type="number" name="max_price" placeholder="Giá đến" value="{{ filters.max_price or '' }}">
+          </div>
+          <select class="field px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium" name="min_rating"><option value="">Mọi mức rating</option><option value="4" {% if filters.min_rating==4 %}selected{% endif %}>Từ 4★</option><option value="3" {% if filters.min_rating==3 %}selected{% endif %}>Từ 3★</option><option value="2" {% if filters.min_rating==2 %}selected{% endif %}>Từ 2★</option></select>
+          <select class="field px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium" name="sort" onchange="this.form.submit()"><option value="newest" {% if filters.sort=='newest' %}selected{% endif %}>Mới nhất</option><option value="price_asc" {% if filters.sort=='price_asc' %}selected{% endif %}>Giá tăng dần</option><option value="price_desc" {% if filters.sort=='price_desc' %}selected{% endif %}>Giá giảm dần</option><option value="rating" {% if filters.sort=='rating' %}selected{% endif %}>Đánh giá cao</option></select>
+          <button class="btn btn-dark px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-sm ml-auto md:ml-0">Lọc</button>
+        </form>
+    </div>
+
+    {% if listing['items'] %}
+    <div class="product-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+      {% for x in listing['items'] %}
+      <a class="product-card animate-fade-in-up bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-indigo-100 hover:shadow-xl hover:shadow-indigo-100/50 hover:-translate-y-1 transition-all group flex flex-col h-full" style="animation-delay:{{ loop.index0 * 0.05 }}s" href="/products/{{ x.product.id }}">
+        <div class="product-image aspect-square overflow-hidden bg-gray-50 relative">
+          <img data-product-image class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="{{ x.image_url_resolved }}" alt="{{ x.product.name }}">
+        </div>
+        <div class="product-meta p-4 flex flex-col flex-grow">
+          <h3 class="font-semibold text-gray-900 text-sm line-clamp-2 mb-2 group-hover:text-indigo-600 transition-colors" title="{{ x.product.name }}">{{ x.product.name }}</h3>
+          <div class="mt-auto">
+              <div class="product-price text-base font-bold text-indigo-600 mb-1">{% if x.product.price > 0 %}{{ '{:,.0f}'.format(x.product.price).replace(',', '.') }} ₫{% else %}<span class="muted text-gray-400 text-xs font-normal">Chưa có dữ liệu giá</span>{% endif %}</div>
+              <div class="rating flex items-center text-xs font-medium text-gray-500"><span class="text-amber-400 mr-1 text-sm">★</span> {{ '%.1f'|format(x.avg_rating) }} <span class="mx-1 text-gray-300">•</span> {{ x.review_count }} đánh giá</div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state animate-fade-in-up bg-white rounded-3xl p-16 text-center border border-gray-100 flex flex-col items-center">
+      <div class="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" class="text-gray-400"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <h3 class="text-xl font-bold text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
+      <p class="text-gray-500">Không tìm thấy sản phẩm phù hợp với bộ lọc hiện tại. Hãy thử thay đổi tiêu chí tìm kiếm.</p>
+    </div>
+    {% endif %}
+
+    {% if listing.pages > 1 %}
+    <nav class="pagination mt-12 flex justify-center items-center gap-2" aria-label="Phân trang sản phẩm">
+      {% if listing.page > 1 %}<a class="pagination-control w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors font-medium shadow-sm" href="{{ pagination_prefix }}{{ listing.page - 1 }}#catalog-results" aria-label="Trang trước">←</a>{% else %}<span class="pagination-control disabled w-10 h-10 flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed" aria-disabled="true">←</span>{% endif %}
+      
+      <div class="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-1 py-1 shadow-sm">
+      {% for p in listing.page_window %}{% if p is none %}<span class="pagination-ellipsis w-8 flex justify-center text-gray-400" aria-hidden="true">…</span>{% elif p == listing.page %}<span class="active w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white font-bold" aria-current="page">{{ p }}</span>{% else %}<a class="w-8 h-8 flex items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors" href="{{ pagination_prefix }}{{ p }}#catalog-results">{{ p }}</a>{% endif %}{% endfor %}
+      </div>
+
+      {% if listing.page < listing.pages %}<a class="pagination-control w-10 h-10 flex items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors font-medium shadow-sm" href="{{ pagination_prefix }}{{ listing.page + 1 }}#catalog-results" aria-label="Trang sau">→</a>{% else %}<span class="pagination-control disabled w-10 h-10 flex items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed" aria-disabled="true">→</span>{% endif %}
+    </nav>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}

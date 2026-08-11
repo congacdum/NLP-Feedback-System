@@ -1,0 +1,88 @@
+version: "3.1"
+nlu:
+- intent: greet
+  examples: |
+    - xin chào
+    - chào shop
+    - chào bạn
+    - hello
+    - hi
+    - alo shop ơi
+    - mình cần hỗ trợ
+    - chào buổi sáng
+- intent: ask_product
+  examples: |
+    - cho mình xem sản phẩm
+    - có những sản phẩm nào
+    - mình muốn tìm hàng
+    - xem danh sách sản phẩm
+    - shop bán gì vậy
+    - cho xem catalog
+    - có đồ điện tử không
+    - mình muốn tìm sản phẩm thời trang
+- intent: submit_feedback
+  examples: |
+    - mình muốn đánh giá sản phẩm
+    - mình muốn gửi phản hồi
+    - cho mình góp ý
+    - mình có nhận xét về đơn hàng
+    - mình muốn review món vừa mua
+    - cho mình để lại đánh giá
+    - mình muốn phản hồi trải nghiệm
+    - mình muốn chấm điểm sản phẩm
+    - tôi cho sản phẩm 4 sao
+- intent: report_problem
+  examples: |
+    - áo mặc hai hôm đã bung chỉ
+    - giao hàng quá lâu
+    - hộp bị móp khi nhận
+    - shop trả lời rất chậm
+    - giá hơi cao so với chất lượng
+    - sản phẩm đẹp nhưng giao chậm
+    - đặt từ tuần trước giờ mới tới
+    - đóng gói kỹ nhưng hàng lại lỗi
+    - shop tư vấn tốt nhưng đổi trả lâu
+    - chất vải ổn mà đường may ẩu
+    - mình không hài lòng về đơn hàng
+    - sản phẩm có vấn đề cần phản ánh
+- intent: goodbye
+  examples: |
+    - tạm biệt
+    - cảm ơn nhé
+    - bye
+    - cảm ơn bạn
+    - mình xong rồi
+    - hẹn gặp lại
+- intent: affirm
+  examples: |
+    - có
+    - đúng rồi
+    - chính xác
+    - ok
+    - ừ
+    - đồng ý
+- intent: deny
+  examples: |
+    - không
+    - không đúng
+    - chưa đúng
+    - ko phải
+- intent: provide_rating
+  examples: |
+    - 1 sao
+    - 2 sao
+    - cho 3 sao
+    - mình chấm 4 sao
+    - 5 sao nhé
+- intent: request_support
+  examples: |
+    - mình cần hỗ trợ
+    - nhờ shop xử lý giúp
+    - tôi muốn đổi trả
+    - cần bảo hành
+    - liên hệ lại giúp mình
+- intent: provide_contact
+  examples: |
+    - số điện thoại của mình là 0912345678
+    - email mình là minh@example.com
+    - liên hệ qua 0987654321

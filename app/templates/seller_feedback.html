@@ -1,0 +1,27 @@
+{% extends "seller_base.html" %}
+{% block title %}Phản hồi · Seller{% endblock %}
+{% block header %}
+<div class="eyebrow"><span class="eyebrow-dot"></span> Customer Voice</div>
+<h1>Phản hồi</h1>
+<p class="muted">Raw feedback được lưu trước inference để không mất dữ liệu nếu NLP gặp lỗi.</p>
+{% endblock %}
+{% block content %}
+<div class="table-wrap animate-fade-in-up">
+    <table>
+        <thead><tr><th>ID</th><th>Sản phẩm</th><th>Khách</th><th>Rating</th><th>Feedback</th><th>Phân tích</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+            {% for r in feedbacks %}
+            <tr>
+                <td><span class="table-id">#{{ r.id }}</span></td>
+                <td><b>{{ r.product.name }}</b></td>
+                <td>{{ r.user.name }}</td>
+                <td>★ {{ r.rating }}</td>
+                <td>{{ r.text_raw[:110] }}</td>
+                <td>{% for a in r.analyses %}<span class="analysis-chip sent-{{ a.sentiment }}">{{ aspect_vi[a.aspect] }} · {{ sentiment_vi[a.sentiment] }}</span>{% endfor %}</td>
+                <td><a href="/seller/feedback/{{ r.id }}" class="table-link">{{ r.analysis_status }} →</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

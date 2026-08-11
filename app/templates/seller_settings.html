@@ -1,0 +1,27 @@
+{% extends "seller_base.html" %}
+{% block title %}Cài đặt · Seller{% endblock %}
+{% block header %}
+<div class="eyebrow"><span class="eyebrow-dot"></span> System</div>
+<h1>Cài đặt</h1>
+{% endblock %}
+{% block content %}
+<div class="panel animate-fade-in-up">
+    <h2>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        Nguyên tắc hệ thống
+    </h2>
+    <div class="settings-info">
+        <div class="settings-item">
+            <b>6 khía cạnh cố định:</b>
+            <p>Chất lượng sản phẩm, Giao hàng, Dịch vụ CSKH, Đóng gói, Giá cả, Khác.</p>
+        </div>
+        <div class="settings-item">
+            <b>4 sentiment:</b>
+            <p>Tích cực, Trung tính, Tiêu cực, Hỗn hợp.</p>
+        </div>
+        <div class="settings-item">
+            <p class="muted">Các threshold của model không chỉnh từ UI. Chúng phải được tune trên Dev và lưu cùng model artifact để tránh can thiệp thủ công làm hỏng evaluation protocol.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

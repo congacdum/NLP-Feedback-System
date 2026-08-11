@@ -1,0 +1,63 @@
+{% extends "base.html" %}{% block title %}Đánh giá của tôi{% endblock %}{% block content %}
+<main class="section bg-gray-50 min-h-screen py-10">
+  <div class="container max-w-4xl mx-auto px-6">
+    <div class="section-head animate-fade-in-up mb-8">
+      <div>
+        <div class="eyebrow inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-xs font-bold uppercase tracking-wider mb-2"><span class="eyebrow-dot w-2 h-2 rounded-full bg-indigo-600"></span> Account</div>
+        <h2 class="text-3xl font-extrabold text-gray-900">Đánh giá của tôi</h2>
+      </div>
+    </div>
+    
+    <div class="flex flex-col gap-5">
+        {% for r in reviews %}
+        <article class="review-card animate-fade-in-up bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden" style="animation-delay:{{ loop.index0 * 0.08 }}s">
+          <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+          
+          <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+              <div>
+                  <a href="/products/{{ r.product.id }}" class="text-xl font-bold text-gray-900 hover:text-indigo-600 transition-colors inline-block mb-1">{{ r.product.name }}</a>
+                  <div class="rating flex items-center gap-3 text-sm font-medium">
+                      <span class="flex items-center text-gray-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-100"><span class="text-amber-500 mr-1.5">★</span> {{ r.rating }}</span>
+                      <span class="text-gray-300">|</span>
+                      <span class="text-gray-500 capitalize bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-100 flex items-center gap-1.5">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                          {{ r.analysis_status }}
+                      </span>
+                  </div>
+              </div>
+              <a href="/products/{{ r.product.id }}" class="shrink-0 text-sm font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-4 py-2 rounded-xl transition-colors self-start">Xem sản phẩm →</a>
+          </div>
+          
+          <p class="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100 mb-4">{{ r.text_raw }}</p>
+          
+          <div class="analysis-chips flex flex-wrap gap-2">
+            {% for a in r.analyses %}
+            <span class="analysis-chip sent-{{ a.sentiment }} inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border
+                  {% if a.sentiment == 'positive' %}bg-green-50 text-green-700 border-green-200
+                  {% elif a.sentiment == 'negative' %}bg-red-50 text-red-700 border-red-200
+                  {% else %}bg-gray-100 text-gray-700 border-gray-200{% endif %}">
+                <span class="w-1.5 h-1.5 rounded-full 
+                  {% if a.sentiment == 'positive' %}bg-green-500
+                  {% elif a.sentiment == 'negative' %}bg-red-500
+                  {% else %}bg-gray-400{% endif %}"></span>
+                {{ a.aspect }} · {{ a.sentiment }}
+            </span>
+            {% endfor %}
+          </div>
+        </article>
+        {% else %}
+        <div class="empty-state animate-fade-in-up bg-white rounded-3xl p-16 text-center border border-gray-100 flex flex-col items-center shadow-sm">
+          <div class="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-indigo-400"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <h3 class="text-xl font-bold text-gray-900 mb-2">Chưa có đánh giá nào</h3>
+          <p class="text-gray-500 mb-6">Bạn chưa gửi đánh giá nào cho các sản phẩm trong hệ thống.</p>
+          <a href="/products" class="btn btn-dark inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+              Khám phá sản phẩm ngay
+          </a>
+        </div>
+        {% endfor %}
+    </div>
+  </div>
+</main>
+{% endblock %}

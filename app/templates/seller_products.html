@@ -1,0 +1,23 @@
+{% extends "seller_base.html" %}
+{% block title %}Sản phẩm · Seller{% endblock %}
+{% block header %}
+<div class="eyebrow"><span class="eyebrow-dot"></span> Product Intelligence</div>
+<h1>Phân tích sản phẩm</h1>
+{% endblock %}
+{% block content %}
+<div class="table-wrap animate-fade-in-up">
+    <table>
+        <thead><tr><th>Sản phẩm</th><th>Feedback</th><th>Rating</th><th>Lượt nhắc tiêu cực</th></tr></thead>
+        <tbody>
+            {% for p in products %}
+            <tr>
+                <td><b>{{ p.name }}</b></td>
+                <td>{{ p.feedback_count }}</td>
+                <td>{{ '%.2f'|format(p.average_rating) }}</td>
+                <td class="sent-negative">{{ p.negative_mentions }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

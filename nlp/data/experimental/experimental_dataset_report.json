@@ -1,0 +1,108 @@
+{
+  "artifact_kind": "experimental_dataset",
+  "scientific_final": false,
+  "policy": {
+    "unsafe_mapped_rows_excluded": true,
+    "demo_fixture_included_for_taxonomy_coverage": true,
+    "cross_split_dedup_priority": [
+      "test",
+      "dev",
+      "train"
+    ]
+  },
+  "inputs": {
+    "train": {
+      "mapped": 20766,
+      "demo": 130
+    },
+    "dev": {
+      "mapped": 2735,
+      "demo": 27
+    },
+    "test": {
+      "mapped": 3848,
+      "demo": 34
+    }
+  },
+  "excluded": {
+    "unsafe_or_ambiguous_public": 7505,
+    "same_split_conflicting_duplicate": 18,
+    "cross_split_duplicate": 42,
+    "cross_split_near_duplicate": 8,
+    "cross_split_conflicting_duplicate": 1
+  },
+  "deduplicated": {
+    "same_split_test": 19,
+    "same_split_dev": 19,
+    "same_split_train": 197
+  },
+  "splits": {
+    "train": {
+      "rows": 15358,
+      "sources": {
+        "project_demo_fixture": 128,
+        "beauty_absa_2022": 12692,
+        "UIT-ViSD4SA": 2538
+      },
+      "aspects": {
+        "product_quality": 10635,
+        "delivery": 4338,
+        "customer_service": 26,
+        "packaging": 2422,
+        "price": 2873,
+        "other": 15
+      },
+      "sentiments": {
+        "positive": 14145,
+        "neutral": 775,
+        "negative": 3620,
+        "mixed": 1769
+      }
+    },
+    "dev": {
+      "rows": 1985,
+      "sources": {
+        "project_demo_fixture": 27,
+        "beauty_absa_2022": 1584,
+        "UIT-ViSD4SA": 374
+      },
+      "aspects": {
+        "product_quality": 1366,
+        "delivery": 583,
+        "customer_service": 6,
+        "packaging": 311,
+        "price": 365,
+        "other": 1
+      },
+      "sentiments": {
+        "positive": 1806,
+        "neutral": 99,
+        "negative": 496,
+        "mixed": 231
+      }
+    },
+    "test": {
+      "rows": 2337,
+      "sources": {
+        "project_demo_fixture": 34,
+        "beauty_absa_2022": 1602,
+        "UIT-ViSD4SA": 701
+      },
+      "aspects": {
+        "product_quality": 1672,
+        "delivery": 544,
+        "customer_service": 10,
+        "packaging": 297,
+        "price": 390,
+        "other": 6
+      },
+      "sentiments": {
+        "positive": 1825,
+        "neutral": 91,
+        "negative": 701,
+        "mixed": 302
+      }
+    }
+  },
+  "challenge_rows": 28
+}

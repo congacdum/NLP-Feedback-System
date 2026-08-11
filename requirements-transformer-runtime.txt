@@ -1,0 +1,5 @@
+-r requirements.txt
+torch>=2.5,<3
+transformers>=4.48,<5
+sentencepiece>=0.2,<1
+py_vncorenlp>=0.1.4,<1

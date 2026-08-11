@@ -1,0 +1,66 @@
+{
+  "total_samples": 19680,
+  "split_counts": {
+    "train": 15358,
+    "dev": 1985,
+    "test": 2337
+  },
+  "source_distribution": {
+    "UIT-ViSD4SA": 3613,
+    "beauty_absa_2022": 15878,
+    "project_demo_fixture": 189
+  },
+  "aspect_distribution": {
+    "product_quality": 13673,
+    "delivery": 5465,
+    "customer_service": 42,
+    "packaging": 3030,
+    "price": 3628,
+    "other": 22
+  },
+  "sentiment_distribution": {
+    "positive": 17776,
+    "neutral": 965,
+    "negative": 4817,
+    "mixed": 2302
+  },
+  "aspect_sentiment": {
+    "product_quality#positive": 8096,
+    "product_quality#neutral": 481,
+    "product_quality#negative": 2817,
+    "product_quality#mixed": 2279,
+    "delivery#positive": 3403,
+    "delivery#neutral": 347,
+    "delivery#negative": 1711,
+    "delivery#mixed": 4,
+    "customer_service#positive": 15,
+    "customer_service#neutral": 8,
+    "customer_service#negative": 12,
+    "customer_service#mixed": 7,
+    "packaging#positive": 2884,
+    "packaging#neutral": 26,
+    "packaging#negative": 116,
+    "packaging#mixed": 4,
+    "price#positive": 3370,
+    "price#neutral": 99,
+    "price#negative": 154,
+    "price#mixed": 5,
+    "other#positive": 8,
+    "other#neutral": 4,
+    "other#negative": 7,
+    "other#mixed": 3
+  },
+  "multi_aspect_rate": 0.36316056910569106,
+  "mixed_annotation_count": 2302,
+  "no_aspect_count": 2881,
+  "review_length_tokens": {
+    "min": 1,
+    "median": 20.0,
+    "mean": 23.535924796747967,
+    "max": 170
+  },
+  "duplicate_count": 0,
+  "duplicate_groups": [],
+  "near_duplicate_count": 0,
+  "near_duplicate_note": "bounded token-Jaccard scan over first 3000 rows; use check_dataset.py for strict cross-split leakage"
+}

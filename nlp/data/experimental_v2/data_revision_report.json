@@ -1,0 +1,65 @@
+{
+  "revision": "experimental_v2_project_authored_augmentation_v1",
+  "test_opened": false,
+  "challenge_opened": false,
+  "rows": {
+    "train_before": 15358,
+    "dev_before": 1985,
+    "train_added": 880,
+    "dev_added": 220,
+    "train_after": 16238,
+    "dev_after": 2205,
+    "removed": 0,
+    "changed": 0
+  },
+  "provenance": {
+    "project_authored_synthetic": 1100,
+    "human_verified": 0,
+    "public_mapped": 0,
+    "is_scientific_gold": false
+  },
+  "aspect_counts_before": {
+    "train": {
+      "product_quality": 10635,
+      "delivery": 4338,
+      "customer_service": 26,
+      "packaging": 2422,
+      "price": 2873,
+      "other": 15
+    },
+    "dev": {
+      "product_quality": 1366,
+      "delivery": 583,
+      "customer_service": 6,
+      "packaging": 311,
+      "price": 365,
+      "other": 1
+    }
+  },
+  "aspect_counts_after": {
+    "train": {
+      "product_quality": 10695,
+      "delivery": 4498,
+      "customer_service": 366,
+      "packaging": 2622,
+      "price": 3033,
+      "other": 235
+    },
+    "dev": {
+      "product_quality": 1381,
+      "delivery": 623,
+      "customer_service": 91,
+      "packaging": 361,
+      "price": 405,
+      "other": 56
+    }
+  },
+  "synthetic_annotation_distribution": {
+    "customer_service": 425,
+    "other": 275,
+    "price": 200,
+    "packaging": 250,
+    "product_quality": 75,
+    "delivery": 200
+  }
+}

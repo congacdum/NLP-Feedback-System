@@ -1,0 +1,86 @@
+version: "3.1"
+intents:
+  - greet
+  - ask_product
+  - submit_feedback
+  - report_problem
+  - affirm
+  - deny
+  - provide_rating
+  - request_support
+  - provide_contact
+  - goodbye
+  - nlu_fallback
+entities:
+  - product
+  - rating
+  - contact
+slots:
+  product:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: product
+  feedback_text:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: custom
+  detected_aspects:
+    type: any
+    influence_conversation: false
+    mappings:
+      - type: custom
+  rating:
+    type: float
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: rating
+      - type: custom
+  feedback_confirmed:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+  needs_clarification:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+  wants_support:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+  contact_consent:
+    type: bool
+    influence_conversation: false
+    mappings:
+      - type: custom
+  contact:
+    type: text
+    influence_conversation: false
+    mappings:
+      - type: from_entity
+        entity: contact
+      - type: custom
+responses:
+  utter_greet:
+    - text: "Chào bạn. Mình có thể hỗ trợ về sản phẩm hoặc ghi nhận phản hồi của bạn."
+  utter_ask_product:
+    - text: "Bạn có thể mở danh sách sản phẩm trên website, hoặc nói tên sản phẩm bạn đang quan tâm."
+  utter_goodbye:
+    - text: "Cảm ơn bạn đã chia sẻ. Hẹn gặp lại."
+  utter_fallback:
+    - text: "Mình chưa hiểu rõ. Bạn có thể mô tả cụ thể trải nghiệm về sản phẩm, giao hàng, đóng gói, giá hoặc hỗ trợ của shop không?"
+actions:
+  - action_analyze_feedback
+  - action_confirm_feedback
+  - action_capture_rating
+  - action_handle_support
+  - action_capture_contact
+session_config:
+  session_expiration_time: 60
+  carry_over_slots_to_new_session: true

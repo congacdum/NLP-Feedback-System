@@ -1,0 +1,14 @@
+__pycache__/
+.pytest_cache/
+.pytest-*/
+*.pyc
+.venv/
+.train-venv
+training_cache
+model_artifacts
+nlp/data/raw/*
+nlp/data/mapped/*
+nlp/data/gold/*
+data/lazada_metadata_cache/
+data/app.db
+.git/

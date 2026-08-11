@@ -1,0 +1,40 @@
+{% extends "seller_base.html" %}
+{% block title %}Đánh giá mô hình · Seller{% endblock %}
+{% block header %}
+<div class="eyebrow"><span class="eyebrow-dot"></span> Model Lab</div>
+<h1>Đánh giá mô hình</h1>
+<p class="muted">Trang này chỉ đọc evaluation artifact đã đóng băng; không chạy mô hình khi mở dashboard.</p>
+{% endblock %}
+{% block content %}
+{% if no_final %}
+<div class="eval-warning animate-fade-in-up">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <b>Chưa có mô hình final được đánh giá.</b><br>Huấn luyện, đóng băng checkpoint và chạy held-out Test theo protocol trước khi dùng kết quả khoa học.
+</div>
+{% else %}
+<div class="panel animate-fade-in-up" style="margin-bottom:18px">
+    <b>Artifact:</b> {{ artifact_name }}
+    {% if experimental %}<br><span class="eval-warning" style="margin-top:8px;display:inline-block"><b>EXPERIMENTAL / NON-SCIENTIFIC</b> — chỉ để kiểm tra runtime; không phải kết quả trên gold human-verified.</span>{% endif %}
+</div>
+{% set t=metrics.get('test',{}) %}
+<div class="metric-grid animate-fade-in-up" style="animation-delay:.1s">
+    <div class="metric"><small>Strict-union Pair Macro-F1</small><strong>{{ '%.3f'|format(t.get('pair_macro_f1_strict_union',0)) }}</strong></div>
+    <div class="metric"><small>Aspect Macro-F1</small><strong>{{ '%.3f'|format(t.get('aspect_macro_f1',0)) }}</strong></div>
+    <div class="metric"><small>Sentiment Macro-F1</small><strong>{{ '%.3f'|format(t.get('sentiment_macro_f1',0)) }}</strong></div>
+    <div class="metric"><small>Exact Match</small><strong>{{ '%.3f'|format(t.get('exact_match',0)) }}</strong></div>
+</div>
+<div class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.2s">
+    <b>Primary metric:</b> Strict-union Pair Macro-F1 · <b>Dev threshold tuning:</b> có · <b>Test dùng để chọn model:</b> không.
+    {% if experimental %} Kết quả này là experimental, không phải scientific final.{% endif %}
+</div>
+<div class="chart-grid animate-fade-in-up" style="margin-top:18px;animation-delay:.3s">
+    {% for p in plots %}
+    <article class="chart-card"><h3>{{ p.title }}</h3><img src="/model-artifacts/{{ artifact_rel }}/evaluation/plots/{{ p.file }}" alt="{{ p.title }}"></article>
+    {% endfor %}
+</div>
+<details class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.4s">
+    <summary><b>Chi tiết kỹ thuật</b></summary>
+    <pre style="white-space:pre-wrap;font-size:12px;overflow:auto;font-family:var(--font-mono,'monospace')">{{ metrics|tojson(indent=2) }}</pre>
+</details>
+{% endif %}
+{% endblock %}

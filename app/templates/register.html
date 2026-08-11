@@ -1,0 +1,43 @@
+{% extends "base.html" %}{% block title %}Đăng ký{% endblock %}{% block content %}
+<div class="auth-shell min-h-[80vh] flex items-center justify-center p-6 bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+    <div class="auth-card animate-fade-in-up w-full max-w-md bg-white rounded-3xl shadow-2xl shadow-indigo-100/50 border border-gray-100 p-8 sm:p-10 relative overflow-hidden">
+        <div class="auth-card-accent absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
+        <div class="eyebrow inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-6">
+            <span class="eyebrow-dot w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span> Customer
+        </div>
+        <h1 class="text-3xl font-extrabold text-gray-900 mb-2">Tạo tài khoản</h1>
+        <p class="muted text-gray-500 text-sm mb-8">Tham gia cộng đồng để gửi đánh giá chất lượng.</p>
+        
+        {% if error %}
+        <div class="alert bg-red-50 text-red-700 border border-red-200 rounded-xl p-4 text-sm font-medium mb-6 flex items-start gap-3">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ error }}
+        </div>
+        {% endif %}
+        
+        <form method="post" action="/auth/register" class="flex flex-col gap-4">
+            <div class="form-group">
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Họ và tên</label>
+                <input class="field w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" name="name" placeholder="Nguyễn Văn A" required>
+            </div>
+            <div class="form-group">
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
+                <input class="field w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" type="email" name="email" placeholder="email@example.com" required>
+            </div>
+            <div class="form-group">
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mật khẩu</label>
+                <input class="field w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" type="password" name="password" minlength="6" placeholder="Ít nhất 6 ký tự" required>
+            </div>
+            <div class="form-group">
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Xác nhận mật khẩu</label>
+                <input class="field w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm" type="password" name="confirm_password" minlength="6" placeholder="Nhập lại mật khẩu" required>
+            </div>
+            <button class="btn btn-dark w-full py-3.5 mt-4 bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-600/30 hover:bg-indigo-700 hover:shadow-indigo-700/40 hover:-translate-y-0.5 transition-all">Đăng ký</button>
+        </form>
+        
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600">Đã có tài khoản? <a href="/login" class="font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Đăng nhập</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

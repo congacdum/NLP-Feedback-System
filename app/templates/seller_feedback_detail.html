@@ -1,0 +1,26 @@
+{% extends "seller_base.html" %}
+{% block title %}Feedback #{{ feedback.id }}{% endblock %}
+{% block header %}
+<div class="eyebrow"><span class="eyebrow-dot"></span> Feedback Detail</div>
+<h1>#FB-{{ '%04d'|format(feedback.id) }}</h1>
+{% endblock %}
+{% block content %}
+<section class="analysis-hero animate-fade-in-up">
+    <div class="muted">{{ feedback.product.name }} · ★ {{ feedback.rating }} · {{ feedback.user.name }}</div>
+    <blockquote>"{{ feedback.text_raw }}"</blockquote>
+    <div class="divider"></div>
+    <div class="eyebrow"><span class="eyebrow-dot"></span> NLP Analysis</div>
+    {% for a in feedback.analyses %}
+    <div class="analysis-line">
+        <strong>{{ aspect_vi[a.aspect] }}</strong>
+        <span class="analysis-chip sent-{{ a.sentiment }}">{{ sentiment_vi[a.sentiment] }}</span>
+        <span class="muted" style="font-family:var(--font-mono,'monospace');font-size:12px">score {{ '%.3f'|format(a.aspect_score) }} / {{ '%.3f'|format(a.sentiment_score) }}</span>
+    </div>
+    {% else %}
+    <p class="muted">Không có aspect rõ ràng hoặc phân tích chưa thành công.</p>
+    {% endfor %}
+    <div class="divider"></div>
+    <div class="muted"><span class="status-dot"></span>Status: {{ feedback.analysis_status }} · Model: {{ feedback.model_version or '—' }}</div>
+    <p class="muted" style="font-size:12px">Score là output của classifier, không được diễn giải mặc định thành "x% chắc chắn đúng".</p>
+</section>
+{% endblock %}

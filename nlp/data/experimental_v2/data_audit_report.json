@@ -1,0 +1,192 @@
+{
+  "report_type": "train_dev_only_data_audit",
+  "test_opened": false,
+  "challenge_opened": false,
+  "train": {
+    "rows": 16238,
+    "aspect_mentions": {
+      "product_quality": 10695,
+      "delivery": 4498,
+      "customer_service": 366,
+      "packaging": 2622,
+      "price": 3033,
+      "other": 235
+    },
+    "sentiment_by_aspect": {
+      "product_quality": {
+        "positive": 6492,
+        "neutral": 389,
+        "negative": 2064,
+        "mixed": 1750
+      },
+      "delivery": {
+        "positive": 2708,
+        "neutral": 283,
+        "negative": 1504,
+        "mixed": 3
+      },
+      "customer_service": {
+        "positive": 79,
+        "neutral": 42,
+        "negative": 203,
+        "mixed": 42
+      },
+      "packaging": {
+        "positive": 2336,
+        "neutral": 33,
+        "negative": 235,
+        "mixed": 18
+      },
+      "price": {
+        "positive": 2716,
+        "neutral": 91,
+        "negative": 207,
+        "mixed": 19
+      },
+      "other": {
+        "positive": 72,
+        "neutral": 36,
+        "negative": 91,
+        "mixed": 36
+      }
+    },
+    "single_aspect_rows": 8043,
+    "multi_aspect_rows": 5925,
+    "no_aspect_rows": 2270,
+    "multi_aspect_mentions_by_aspect": {
+      "product_quality": 4796,
+      "delivery": 3725,
+      "customer_service": 112,
+      "packaging": 2190,
+      "price": 2580,
+      "other": 3
+    },
+    "co_occurring_aspects": {
+      "delivery + product_quality": 2659,
+      "price + product_quality": 2171,
+      "delivery + packaging": 1516,
+      "packaging + product_quality": 1365,
+      "delivery + price": 883,
+      "packaging + price": 407,
+      "customer_service + delivery": 100,
+      "customer_service + packaging": 40,
+      "customer_service + product_quality": 9,
+      "customer_service + price": 6,
+      "delivery + other": 3
+    },
+    "average_review_tokens": 23.019,
+    "lexical_diversity": 0.03244,
+    "source_distribution": {
+      "project_demo_fixture": 128,
+      "beauty_absa_2022": 12692,
+      "UIT-ViSD4SA": 2538,
+      "project_authored_synthetic": 880
+    },
+    "source_type_distribution": {
+      "project_demo_fixture": 128,
+      "beauty_absa_2022": 12692,
+      "UIT-ViSD4SA": 2538,
+      "project_authored_synthetic": 880
+    },
+    "pattern_counts": {
+      "price_negative_value": 67,
+      "price_positive_value": 370,
+      "packaging_negative": 223,
+      "packaging_positive": 134
+    },
+    "exact_duplicate_count_within_split": 0
+  },
+  "dev": {
+    "rows": 2205,
+    "aspect_mentions": {
+      "product_quality": 1381,
+      "delivery": 623,
+      "customer_service": 91,
+      "packaging": 361,
+      "price": 405,
+      "other": 56
+    },
+    "sentiment_by_aspect": {
+      "product_quality": {
+        "positive": 819,
+        "neutral": 45,
+        "negative": 286,
+        "mixed": 231
+      },
+      "delivery": {
+        "positive": 357,
+        "neutral": 37,
+        "negative": 229,
+        "mixed": 0
+      },
+      "customer_service": {
+        "positive": 22,
+        "neutral": 10,
+        "negative": 50,
+        "mixed": 9
+      },
+      "packaging": {
+        "positive": 306,
+        "neutral": 8,
+        "negative": 42,
+        "mixed": 5
+      },
+      "price": {
+        "positive": 348,
+        "neutral": 14,
+        "negative": 38,
+        "mixed": 5
+      },
+      "other": {
+        "positive": 17,
+        "neutral": 8,
+        "negative": 22,
+        "mixed": 9
+      }
+    },
+    "single_aspect_rows": 1158,
+    "multi_aspect_rows": 773,
+    "no_aspect_rows": 274,
+    "multi_aspect_mentions_by_aspect": {
+      "product_quality": 599,
+      "delivery": 507,
+      "customer_service": 28,
+      "packaging": 290,
+      "price": 335,
+      "other": 0
+    },
+    "co_occurring_aspects": {
+      "delivery + product_quality": 349,
+      "price + product_quality": 266,
+      "delivery + packaging": 201,
+      "packaging + product_quality": 169,
+      "delivery + price": 131,
+      "packaging + price": 58,
+      "customer_service + delivery": 25,
+      "customer_service + packaging": 10,
+      "customer_service + product_quality": 3
+    },
+    "average_review_tokens": 24.335,
+    "lexical_diversity": 0.06728,
+    "source_distribution": {
+      "project_demo_fixture": 27,
+      "beauty_absa_2022": 1584,
+      "UIT-ViSD4SA": 374,
+      "project_authored_synthetic": 220
+    },
+    "source_type_distribution": {
+      "project_demo_fixture": 27,
+      "beauty_absa_2022": 1584,
+      "UIT-ViSD4SA": 374,
+      "project_authored_synthetic": 220
+    },
+    "pattern_counts": {
+      "price_negative_value": 11,
+      "price_positive_value": 52,
+      "packaging_negative": 36,
+      "packaging_positive": 25
+    },
+    "exact_duplicate_count_within_split": 0
+  },
+  "cross_split_exact_duplicates": 0
+}
