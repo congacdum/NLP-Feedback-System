@@ -30,7 +30,6 @@ nlp/data/mapped/*
 nlp/data/gold/*
 !nlp/data/gold/.gitkeep
 
-data/lazada_metadata_cache/
 data/app.db
 
 *.log
