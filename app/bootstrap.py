@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from sqlalchemy import select
+from sqlalchemy import inspect, select, text
 
 from app.config import ROOT, settings
 from app.db import Base, engine, session_scope
@@ -12,6 +12,7 @@ from app.security import hash_password
 
 def initialize_database() -> None:
     Base.metadata.create_all(engine)
+    _ensure_feedback_enrichment_column()
     with session_scope() as session:
         if session.scalar(select(User.id).limit(1)) is None:
             session.add_all([
@@ -26,3 +27,11 @@ def initialize_database() -> None:
                     price=float(row.get("price",0)), description=row.get("description", ""),
                     image_path=row.get("image_path"), image_url=row.get("image_url"),
                 ))
+
+
+def _ensure_feedback_enrichment_column() -> None:
+    """Add the optional issue JSON column without replacing existing feedback."""
+    columns = {column["name"] for column in inspect(engine).get_columns("feedback")}
+    if "issue_details_json" not in columns:
+        with engine.begin() as connection:
+            connection.execute(text("ALTER TABLE feedback ADD COLUMN issue_details_json TEXT"))

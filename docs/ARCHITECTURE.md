@@ -3,7 +3,7 @@
 ## 1. Design principles
 
 1. NLP output has one canonical schema: aspect-sentiment pairs.
-2. Rasa handles conversation intent/flow; ABSA handles feedback semantics.
+2. The inline feedback assistant gathers rating and text; ABSA handles feedback semantics.
 3. Raw feedback is durable before NLP begins.
 4. Inference happens once at ingestion; analytics query stored results.
 5. Training and runtime are separate pipelines.
@@ -172,14 +172,14 @@ Secondary:
 
 ## 8. Rasa
 
-Rasa roles:
+Rasa is retained only for optional conversational development:
 
 - intent classification;
 - optional entity extraction;
 - rule/dialogue flow;
 - custom action calling the same FastAPI `/api/nlp/analyze` endpoint.
 
-Rasa does not contain a duplicate sentiment/topic classifier. Normal app startup does not require Rasa; `START_WITH_RASA.bat` trains and launches the optional Rasa profile.
+Rasa does not contain a duplicate sentiment/topic classifier. It is not part of the customer feedback ingestion path: the floating state-machine chat and its routes are retired. Normal app startup does not require Rasa; `START_WITH_RASA.bat` trains and launches the optional Rasa profile.
 
 ## 9. Product images
 
@@ -223,15 +223,12 @@ Visual language is inspired by the supplied Figma e-commerce template: editorial
 
 - `/api/products`: public.
 - `/api/nlp/analyze`: public analysis endpoint for Rasa/app integration; no persistence.
-- `/api/chat`: public.
 - `/api/feedback`: authenticated customer.
 - `/api/analytics/summary`: seller only.
 - seller web routes: seller only.
 
 ## 12. Failure behavior
 
-- external Rasa unavailable → local chat fallback;
-- optional Transformer unavailable → baseline/rule runtime still starts;
 - NLP inference error during review → raw feedback survives and status becomes failed;
 - remote product image error → local placeholder;
 - no meaningful text → `no_aspect`, no analysis rows;

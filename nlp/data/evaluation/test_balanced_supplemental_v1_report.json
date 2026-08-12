@@ -1,0 +1,47 @@
+{
+  "dataset": "C:\\Users\\LENOVO\\Downloads\\NLP_Feedback_System_SHARE\\nlp\\data\\evaluation\\test_balanced_supplemental_v1.jsonl",
+  "target_annotations_per_aspect": 320,
+  "records": 1786,
+  "annotations": 1920,
+  "aspect_counts": {
+    "customer_service": 320,
+    "other": 320,
+    "delivery": 320,
+    "price": 320,
+    "product_quality": 320,
+    "packaging": 320
+  },
+  "sentiment_pair_counts": {
+    "customer_service#positive": 82,
+    "customer_service#neutral": 79,
+    "customer_service#negative": 81,
+    "customer_service#mixed": 78,
+    "other#positive": 80,
+    "other#neutral": 80,
+    "other#negative": 82,
+    "delivery#positive": 168,
+    "delivery#negative": 88,
+    "price#negative": 65,
+    "product_quality#positive": 207,
+    "product_quality#neutral": 15,
+    "product_quality#negative": 33,
+    "product_quality#mixed": 65,
+    "delivery#neutral": 38,
+    "delivery#mixed": 26,
+    "packaging#positive": 171,
+    "packaging#neutral": 49,
+    "packaging#negative": 53,
+    "packaging#mixed": 47,
+    "price#positive": 140,
+    "price#neutral": 58,
+    "price#mixed": 57,
+    "other#mixed": 78
+  },
+  "origin_counts": {
+    "official_test_selected": 648,
+    "synthetic_fill_to_target": 1138
+  },
+  "duplicate_texts": 0,
+  "official_test_source": "C:\\Users\\LENOVO\\Downloads\\NLP_Feedback_System_SHARE\\nlp\\data\\experimental\\test.jsonl",
+  "protocol_note": "Supplemental balanced evaluation split; not a replacement for official held-out Test and not for model/threshold selection."
+}

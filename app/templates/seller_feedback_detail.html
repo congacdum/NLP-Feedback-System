@@ -19,6 +19,18 @@
     {% else %}
     <p class="muted">Không có aspect rõ ràng hoặc phân tích chưa thành công.</p>
     {% endfor %}
+    {% if enrichment %}
+    <div class="divider"></div>
+    <div class="eyebrow"><span class="eyebrow-dot"></span> Issue / Action enrichment</div>
+    {% for item in enrichment %}
+    <div class="analysis-line">
+        <strong>{{ aspect_vi[item.aspect] }}</strong>
+        <span class="analysis-chip">{{ item.issue }}</span>
+        <span class="muted">{{ item.action }}</span>
+        {% if item.evidence %}<span class="muted">“{{ item.evidence }}”</span>{% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
     <div class="divider"></div>
     <div class="muted"><span class="status-dot"></span>Status: {{ feedback.analysis_status }} · Model: {{ feedback.model_version or '—' }}</div>
     <p class="muted" style="font-size:12px">Score là output của classifier, không được diễn giải mặc định thành "x% chắc chắn đúng".</p>

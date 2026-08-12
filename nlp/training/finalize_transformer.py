@@ -60,6 +60,7 @@ def main() -> None:
     p.add_argument("--test", type=Path, default=ROOT / "nlp/data/gold/test.jsonl")
     p.add_argument("--challenge", type=Path, default=ROOT / "nlp/data/challenge/final_challenge.jsonl")
     p.add_argument("--vncorenlp-dir", type=Path, default=None)
+    p.add_argument("--allow-experimental", action="store_true", help="Allow evaluation of an explicitly selected experimental artifact")
     p.add_argument("--scientific-final", action="store_true", help="Use only after human-gold/data protocol gates are satisfied")
     p.add_argument("--force", action="store_true", help="Re-evaluate an artifact that already has final_evaluation.lock")
     args = p.parse_args()
@@ -88,7 +89,11 @@ def main() -> None:
 
     train, dev, test = read_jsonl(args.train), read_jsonl(args.dev), read_jsonl(args.test)
     challenge = read_jsonl(args.challenge) if args.challenge.exists() else []
-    analyzer = TransformerAnalyzer(artifact, vncorenlp_dir=args.vncorenlp_dir)
+    analyzer = TransformerAnalyzer(
+        artifact,
+        vncorenlp_dir=args.vncorenlp_dir,
+        allow_experimental=args.allow_experimental,
+    )
     dev_pred, test_pred = predict(analyzer, dev), predict(analyzer, test)
     challenge_pred = predict(analyzer, challenge) if challenge else []
     dev_metrics = evaluate_records(dev, dev_pred)

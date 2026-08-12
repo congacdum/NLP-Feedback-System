@@ -1,0 +1,1373 @@
+PAGES: 40
+
+
+--- PAGE 1 ---
+BÁO CÁO BÀI TẬP LỚN
+TÌM HIỂU RASA CHATBOT VÀ ỨNG DỤNG TRONG VIỆC
+XÂY DỰNG MODULE PHÂN TÍCH FEEDBACK NGƯỜI
+DÙNG
+ỨngdụngphântíchphảnhồitiếngViệttheokhíacạnh
+trongthươngmạiđiệntử
+Sinh viên thực hiện: TrầnQuangThái–24022451
+NguyễnVănTrung–24022475
+ĐàmQuangTiến–24022463
+VũHảiAnh–24022260
+Học phần: Xửlýngônngữtựnhiên
+Đề tài: Rasa,PhoBERT,ABSAvàhệthốngphảnhồithương
+mạiđiệntử
+2026
+
+
+--- PAGE 2 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 1
+Mục lục
+Danh mục ký hiệu, bảng và hình 2
+1 Giới thiệu và bối cảnh bài toán 2
+2 Cơ sở lý thuyết 4
+3 Phát biểu bài toán và yêu cầu hệ thống 6
+4 Dữ liệu và chiến lược xây dựng tập huấn luyện 9
+5 Kiến trúc tổng thể của hệ thống 12
+6 Thiết kế mô hình PhoBERT đa nhiệm cho ABSA 15
+7 Quy trình huấn luyện, kiểm soát sai lỗi và tái lập 17
+8 Phương pháp đánh giá và thực nghiệm 19
+9 Tích hợp Rasa, lớp bằng chứng và lưu trữ dữ liệu 23
+10 Thiết kế ứng dụng thương mại điện tử 25
+11 Triển khai, kiểm thử và bàn giao 26
+12 Thảo luận, hạn chế và hướng phát triển 29
+13 Kết luận 31
+Tài liệu tham khảo 31
+Báo cáo được tổ chức theo mạch từ cơ sở lý thuyết đến thiết kế, huấn luyện, đánh giá và triển
+khai.CácphụlụcA–Hcungcấpcakiểmthử,hợpđồngAPI,checklistbàngiao,tiếntrìnhthực
+nghiệm,hướngdẫngánnhãn,chitiếttoánhọc,cáchđọcchỉsốvàquảntrịtáilập.Phầnkếtquả
+phânbiệtrõgiữabằngchứngkỹthuậtnộibộvàđánhgiákhoahọccuốicùng;cácartifacthiện
+tạivẫnmangtrạngtháithựcnghiệm.
+
+
+--- PAGE 3 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 2
+Danh mục ký hiệu, bảng và hình
+Bảng 1. Các ký hiệu và thuật ngữ chính.
+Ký hiệu / thuật ngữ Ý nghĩa sử dụng trong báo cáo
+NLP Xửlýngônngữtựnhiên.
+ABSA Phântíchcảmxúctheokhíacạnh(Aspect-BasedSentimentAnalysis).
+PhoBERT MôhìnhngônngữtiềnhuấnluyệnđơnngữchotiếngViệt.
+Rasa Khungxâydựngtrợlýhộithoại,dùngchođiềuphốiluồnghộithoạitrong
+dựán.
+Dev Tậppháttriểndùngđểchọnmôhình/ngưỡng;khôngphảitậpkiểmthửcuối
+cùng.
+Test/Challenge Tậpgiữlạiđểđánhgiáđộclập;khôngdùngchotinhchỉnh.
+PairMacro-F1 F1trungbìnhtrêncáccặpkhíacạnh-cảmxúctheogiaonghiêmngặt.
+no_aspect Khôngpháthiệnkhíacạnhphảnhồicóýnghĩa;khôngphảichủđềthứbảy.
+Các hình minh họa trong báo cáo được dựng lại từ kiến trúc và số liệu của chính dự án nhằm
+làmrõluồngxửlý.Chúngkhôngthaythếchobằngchứngchạythựctếtrongartifact,loghuấn
+luyệnhoặcbáocáokiểmthử.
+Hình 1. Mạch logic từ phản hồi người dùng đến thống kê cho người bán.
+1. Giới thiệu và bối cảnh bài toán
+1.1. Đặt vấn đề
+Trong lĩnh vực thương mại điện tử, phản hồi của khách hàng là nguồn dữ liệu trực tiếp phản
+ánhchấtlượngsảnphẩmvàdịchvụ.Cáchệthốngđánhgiátruyềnthốngthườngdựatrênthang
+điểm sao hoặc một nhãn cảm xúc chung cho toàn bộ nội dung. Tuy nhiên, cách biểu diễn này
+chưathểhiệnrõnguyênnhâncụthểdẫnđếnsựhàilònghoặckhônghàilòngcủangườidùng.
+
+
+--- PAGE 4 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 3
+Xétmộtphảnhồiđiểnhình: “Áo mặc đẹp nhưng giao hàng chậm, hộp hơi móp và giá khá cao.”
+Câuphảnhồinàyđồngthờichứađánhgiátíchcựcvềchấtlượngsảnphẩmvàđánhgiátiêucực
+về giao hàng, đóng gói và giá cả. Nếu chỉ gán một nhãn cảm xúc cho toàn bộ câu, hệ thống sẽ
+làmmấtthôngtinvềtừngkhíacạnhcụthể.
+Xuấtpháttừhạnchếtrên,dựánlựachọnbàitoán phân tích cảm xúc theo khía cạnh (Aspect-
+Based Sentiment Analysis – ABSA) thay cho phân loại cảm xúc toàn câu. Cách tiếp cận này
+chophépxácđịnhtừngkhíacạnhđượcđềcậpcùngcảmxúctươngứng,từđócungcấpthông
+tinchitiếthơnphụcvụviệctổnghợpvàphântíchphảnhồikháchhàng.
+1.2. Lý do lựa chọn đề tài
+Đề tài được lựa chọn dựa trên hai cơ sở chính: tính phù hợp với nội dung học phần và ý nghĩa
+thựctiễn.
+Về mặt học thuật, đề tài kết hợp hầu hết các nội dung trọng tâm của học phần Xử lý ngôn ngữ
+tự nhiên, bao gồm: tiền xử lý văn bản tiếng Việt, tách từ, biểu diễn ngôn ngữ bằng kiến trúc
+Transformer, phân loại đa nhãn, phân tích cảm xúc, đánh giá mô hình, xử lý hội thoại bằng
+chatbotvàtíchhợpmôhìnhvàoứngdụngthựctế.Việckếthợpnhiềunộidungtrongcùngmột
+hệ thống cho phép người học hiểu được mối liên hệ giữa các thành phần thay vì chỉ tiếp cận
+từngkỹthuậtriênglẻ.
+Về mặt thực tiễn, bài toán phân tích phản hồi thương mại điện tử có giá trị ứng dụng rõ rệt.
+Ngườibánkhôngchỉcầnbiếtmứcđánhgiátổngquátmàcòncầnxácđịnhchínhxáckhíacạnh
+nàođanggâyrasựkhônghàilòng,từđóđưaraquyếtđịnhcảithiệnphùhợp.Mộthệthốngcó
+khảnăngtựđộngphânloạiphảnhồitheokhíacạnhvàcảmxúcsẽgiúpngườibántiếtkiệmthời
+gian đọc từng phản hồi thủ công, đồng thời cung cấp cơ sở dữ liệu để theo dõi xu hướng chất
+lượngtheothờigian.
+1.3. Mục tiêu
+Bàitậplớnhướngtớicácmụctiêucụthểsau:
+Về mặt mô hình và xử lý ngôn ngữ: Vềmặtmôhìnhvàxửlýngônngữ:xácđịnhhệphânloại
+cố định gồm sáu khía cạnh: chất lượng sản phẩm (product_quality), giao hàng (delivery), dịch
+vụchămsóckháchhàng(customer_service),đónggói(packaging),giácả(price)vànhómkhác
+(other),vớibốntrạngtháicảmxúcgồmtíchcực,trungtính,tiêucựcvàhỗnhợpchomỗikhía
+cạnh.Trêncơsởđó,xâydựngquytrìnhphântíchcảmxúcđakhíacạnhchotiếngViệtdựatrên
+PhoBERT,táchrõnhiệmvụpháthiệnkhíacạnhvàdựđoáncảmxúctheotừngkhíacạnh.Một
+mô hình cơ sở sử dụng phương pháp cổ điển được xây dựng làm mốc so sánh trước khi tinh
+chỉnh Transformer. Quy trình tiền xử lý được thiết kế thống nhất giữa giai đoạn huấn luyện và
+suyluận,cócơchếbộnhớđệmvàkiểmtratínhnhấtquán.
+Về mặt hệ thống và triển khai: tíchhợpmôhìnhvàoluồngứngdụngthựctếbaogồmbackend
+FastAPI, hội thoại Rasa, cơ sở dữ liệu và bảng điều khiển người bán. Hệ thống tuân thủ các
+
+
+--- PAGE 5 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 4
+nguyêntắchợpđồngdữliệu:điểmđánhgiáchỉđóngvaitròsiêudữliệu,trạngtháikhôngxác
+địnhkhíacạnhkhôngđượchiểnthịnhưmộtchủđềtrênbảngđiềukhiển,vàlớptríchxuấtbằng
+chứng không có quyền thay đổi dự đoán của mô hình. Toàn bộ ứng dụng được đóng gói bằng
+Dockerđểđảmbảokhảnăngbàngiaovàchạytrênmôitrườngkhác.
+Về mặt quy trình: xâydựngquytrìnhhuấnluyệnvàđánhgiácókiểmsoát,baogồmkiểmtra
+tiền điều kiện, kiểm soát giá trị bất thường, lưu điểm kiểm tra có điều kiện và tuân thủ kỷ luật
+không sử dụng tập kiểm tra giữ riêng để lựa chọn mô hình. Quy trình này đảm bảo tính tái lập
+vàkhảnăngmởrộngkhicảithiệnmôhìnhtrongtươnglai.
+1.4. Phạm vi
+Phạmvicủadựánđượcxácđịnhrõràngvàgiữởmứccóchủđích.Hệthốngkhôngxâydựng
+Rasanhưmộtbộphântíchcảmxúctheokhíacạnhthứhaicạnhtranhvớimôhìnhchính.Không
+bổ sung khía cạnh ngoài hệ phân loại đã xác định. Không sử dụng điểm đánh giá để suy luận
+nhãncảmxúc.Khôngxemgiásảnphẩmmôphỏnglàgiáthựctếtừsànthươngmạiđiệntử,và
+khôngxemdữliệutổnghợpbằngmôhìnhngônngữlàdữliệuchuẩnđãquathẩmđịnhcủacon
+người. Mọi mở rộng chỉ được chấp nhận khi thuộc một trong ba trường hợp: sửa lỗi hiện có,
+nâng cao chất lượng mô hình hoặc quy trình đánh giá, hoặc cần thiết cho mục đích minh họa
+củahọcphần.
+2. Cơ sở lý thuyết
+2.1. Phân tích cảm xúc theo khía cạnh
+Phân tích cảm xúc theo khía cạnh (Aspect-Based Sentiment Analysis – ABSA) là bài toán chi
+tiếthóacủaphântíchcảmxúctoànvănbản.Thayvìgánchomỗicâumộtnhãntíchcực,trung
+tínhhoặctiêucựcduynhất,ABSAxácđịnhcácđốitượnghoặckhíacạnhđượcnhắcđếntrong
+văn bản và xác định cảm xúc tương ứng của từng khía cạnh. Cách tiếp cận này đặc biệt phù
+hợpvớimiềnthươngmạiđiệntử,bởimộtphảnhồicóthểđồngthờikhenchấtlượngsảnphẩm
+nhưng chê giao hàng hoặc dịch vụ, nên một nhãn chung không thể phản ánh đầy đủ nội dung
+đánh giá. SemEval 2014 Task 4 đã hệ thống hóa ABSA thành hai nhiệm vụ thành phần gồm
+phát hiện khía cạnh và xác định cảm xúc theo khía cạnh; nhiều công trình nghiên cứu sau này,
+trongđócóthiếtkếcủahệthốngnày,kếthừacáchphânchiađó[1].
+Vềmặthìnhthức,vớicâuđầuvào x,đầuracủahệthốngđượcbiểudiễndướidạngtậphợpcác
+cặp (ai, si),trongđóailàmộtkhíacạnhđượcpháthiệnvà silànhãncảmxúctươngứng.Vídụ,
+vớiđầuvào”Hàngđẹpnhưngshipchậm”,hệthốngtrảvềproduct_quality→positivevàdelivery
+→ negative (mã khía cạnh và mã cảm xúc theo hệ phân loại định nghĩa ở Chương 1). Lợi ích
+củacáchbiểudiễnnàysovớicảmxúctoàncâuđượcminhhọatrong
+Bảng 2. Lợi ích của biểu diễn ABSA trong thương mại điện tử.
+
+
+--- PAGE 6 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 5
+Phản hồi Cảm xúc toàn câu Biểu diễn ABSA phù hợp
+“Sảnphẩmđẹpnhưnggiao
+chậm.”
+Khóchọnmộtnhãnduy
+nhất.
+ChấtlượngSP→tíchcực;Giaohàng
+→tiêucực.
+“Hộpchắcchắn,giáhơicao.” Cóthểbịgánhỗnhợp. Đónggói→tíchcực;Giácả→tiêu
+cực.
+“Shophỗtrợnhanh,chưadùng
+nênchưađánhgiáchấtlượng.”
+Trungtính/tíchcựckhông
+rõ.
+CSKH→tíchcực;cóthểkhôngphát
+rachấtlượngSP.
+Bảng 2.1 cho thấy ABSA khắc phục hạn chế của phân loại cảm xúc toàn câu bằng cách bảo
+toàncấutrúc”mộtcâu–nhiềukhíacạnh”củaphảnhồi.Trườnghợpthứbađồngthờichỉrarằng
+không phải mọi khía cạnh đều xuất hiện trong mọi phản hồi; đây là cơ sở để hệ thống chỉ đưa
+ra dự đoán cảm xúc trên các khía cạnh thực sự được đề cập. Nhờ đó, ABSA đáp ứng mục tiêu
+thốngkêtheonguyênnhâncủahệthốngthươngmạiđiệntử:ngườibánbiếtchínhxáckhíacạnh
+nàotạorasựhàilònghoặckhônghàilòng,thayvìchỉnhậnđượcmộtmứcđánhgiátổngquát.
+2.2. Transformer, BERT và PhoBERT
+Transformer sử dụng cơ chế attention để mô hình hóa quan hệ giữa các vị trí trong chuỗi mà
+khôngcầnxửlýtuầntựnhưmạngnơ-ronhồitiếp[8].Trênnềntảngnày,BERT(Bidirectional
+Encoder Representations from Transformers) phát triển thành bộ mã hóa hai chiều được tiền
+huấn luyện trên dữ liệu lớn. Điểm cốt lõi của BERT là khả năng học biểu diễn ngữ cảnh hai
+chiều, nhờ đó cùng một từ có thể nhận biểu diễn khác nhau tùy thuộc vào ngữ cảnh xuất hiện;
+saugiaiđoạntiềnhuấnluyện,môhìnhcóthểđượctinhchỉnhchocáctácvụhạnguồnvớithay
+đổi kiến trúc tương đối nhỏ [2]. RoBERTa là biến thể tối ưu hóa quy trình tiền huấn luyện của
+BERTbằngcáchloạibỏmụctiêudựđoáncâukếtiếp,đồngthờităngkíchthướcbatchvàlượng
+dữliệuhuấnluyện.
+PhoBERT do nhóm nghiên cứu VinAI phát triển, kế thừa hướng tiếp cận của RoBERTa và
+được tiền huấn luyện chuyên biệt cho tiếng Việt. Nhờ được huấn luyện trên lượng lớn dữ liệu
+tiếng Việt, PhoBERT có khả năng biểu diễn ngữ cảnh phù hợp với nhiều tác vụ xử lý ngôn
+ngữtựnhiênnhưphânloạivănbản,nhậndiệnthựcthểvàphântíchcảmxúc[3].Trongdựán,
+vinai/phobert-base-v2đượclựachọnlàmmôhìnhngônngữnềntảng.Thayvìhuấnluyệnmột
+mô hình Transformer từ đầu, hệ thống tiến hành tinh chỉnh PhoBERT cho bài toán phân tích
+phảnhồitheokhíacạnh,quađótậndụngcácbiểudiễnngônngữtiếngViệtđãđượchọctrong
+giaiđoạntiềnhuấnluyện.
+Trước khi đi vào bộ tách từ của PhoBERT, văn bản được chuẩn hóa và phân đoạn từ bằng
+VnCoreNLP, bộ công cụ xử lý tiếng Việt trong đó phân đoạn từ là thành phần đặc biệt quan
+trọngđốivớicácmôhìnhdùngbiểudiễntừconnhưngđượchuấnluyệntrênvănbảnđãtáchtừ
+[4]. Từ đây phát sinh yêu cầu nghiêm ngặt về tính nhất quán giữa huấn luyện và suy luận: nếu
+haigiaiđoạnsửdụnghaikiểuphânđoạnkhácnhau,phânphốitokenđầuvàosẽthayđổivàkết
+
+
+--- PAGE 7 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 6
+quảđánhgiákhôngcònphảnánhđúnghệthốngkhivậnhànhthựctế.
+2.3. Phát hiện khía cạnh và phân loại cảm xúc theo khía cạnh
+Gọi hlàbiểudiễncâutríchxuấttừbộmãhóaPhoBERT.Domộtphảnhồicóthểchứađồngthời
+nhiềukhíacạnh,bàitoánpháthiệnkhíacạnhđượcmôhìnhhóatheohướngđanhãnthayvìđa
+lớp:môhìnhtạosáuxácsuấtđộclậpquahàmsigmoid, pa = sigmoid(Wah + ba),vàmỗikhía
+cạnh có xác suất vượt ngưỡng được xem là xuất hiện. Hàm mất mát của nhánh này là Binary
+Cross-Entropytínhtrênsáunhãnnhịphân.
+Với nhiệm vụ phân loại cảm xúc theo khía cạnh, mỗi khía cạnh được gán một trong bốn nhãn
+s ∈ { positive, neutral, negative, mixed}. Mô hình sinh phân bố dự đoán cảm xúc
+riêngchotừngkhíacạnhvàsửdụngCross-Entropylàmhàmmấtmát.
+Tuy nhiên, cảm xúc chỉ có ý nghĩa đối với những khía cạnh thực sự xuất hiện trong phản hồi.
+Vì vậy, các vị trí tương ứng với khía cạnh không xuất hiện được đánh dấu bằng ignore_index
+vàloạikhỏiquátrìnhtínhmấtmát.Cơchếnàygiúpmôhìnhchỉhọctrêncáccặp khía cạnh –
+cảm xúc cónhãnhợplệ,đồngthờiduytrìsựtáchbiệtgiữahainhiệmvụ:xácđịnh khía cạnh
+nào xuất hiện vàxácđịnh cảm xúc đối với từng khía cạnh đó .
+2.4. Học đa nhiệm
+Hai nhiệm vụ phát hiện khía cạnh và phân loại cảm xúc được huấn luyện đồng thời trên cùng
+một bộ mã hóa PhoBERT theo cơ chế học đa nhiệm. Hàm mất mát tổng hợp là tổ hợp tuyến
+tính của hai thành phần:L = λaLaspect + λsLsentiment với λa = λs = 1 trong cấu hình hiện tại.
+Kiếntrúcnàychophéphainhiệmvụchiasẻbiểudiễnngữnghĩacủacâuđầuvàotừbộmãhóa
+chung, đồng thời vẫn duy trì các nhánh phân loại chuyên biệt, nhờ đó mô hình học được biểu
+diễnphongphúhơnsovớihuấnluyệntừngnhiệmvụriênglẻ.
+2.5. Vai trò của Rasa
+Rasa là khung mã nguồn mở hỗ trợ xây dựng trợ lý hội thoại, với các thành phần chính gồm
+nhận diện ý định, trích xuất thực thể, điền giá trị slot, luật hội thoại và hành động tùy biến để
+gọimãnghiệpvụhoặcAPIbênngoài.Trongkiếntrúccủadựán,Rasađượcđặtởlớphạtầng
+hộithoạitùychọn:nóxácđịnhbướctiếptheocủacuộctròchuyệnvàgọiAPIphântíchkhicần
+xửlýphảnhồicủakháchhàng,nhưngkhôngcóquyềnthaythếPhoBERTtrongcácquyếtđịnh
+vềkhíacạnhvàcảmxúc.CáchphânvainàyphùhợpvớibảnchấtcủaRasalàlớpđiềuphốihội
+thoại,trongkhiphântíchcảmxúctheokhíacạnhlàbàitoánmôhìnhđộclập[5].
+3. Phát biểu bài toán và yêu cầu hệ thống
+3.1. Đầu vào, đầu ra và đơn vị dự đoán
+Đầu vào của hệ thống là chuỗi phản hồi tiếng Việt do khách hàng nhập, kèm theo các siêu dữ
+liệu ngữ cảnh như mã sản phẩm (product_id), điểm đánh giá (rating) và danh mục (category).
+
+
+--- PAGE 8 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 7
+Các siêu dữ liệu này chỉ phục vụ mục đích liên kết và hiển thị, không được nối vào nội dung
+phảnhồitrướckhiđưavàomôhình,nhằmtránhviệc”gợiý”kếtquảtheocáchkhôngkiểmsoát
+được.
+Đầu ra chuẩn của thành phần phân tích là tập hợp các cặp khía cạnh – cảm xúc, ví dụ
+{product_quality: positive, delivery: negative}. Như vậy, đơn vị dự đoán của hệ thống là cặp
+(khíacạnh,cảmxúc)chứkhôngphảinhãncảmxúctoàncâu.Trườnghợpphảnhồikhôngchứa
+khíacạnhđủýnghĩa,hệthốngsửdụngtrạngtháino_aspectđểyêucầungườidùnglàmrõnội
+dung hoặc lưu kết quả tương ứng. Hệ phân loại sáu khía cạnh cố định, như đã định nghĩa ở
+Chương1,đượctómtắttrongBảng3.1.
+Bảng 3. Taxonomy sáu khía cạnh cố định của dự án.
+Mã nội bộ Hiển thị tiếng Việt Ý nghĩa
+product_quality Chấtlượngsảnphẩm Chấtlượng,độbền,côngnăng,lỗisảnphẩm.
+delivery Giaohàng Tốcđộ,thờigian,vậnchuyển.
+customer_service DịchvụCSKH Hỗtrợ,tưvấn,phảnhồicủashop/nhânviên.
+packaging Đónggói Hộp,baobì,bảovệhànghóa.
+price Giácả Đắt/rẻ,mứcgiá,giátrịsovớikỳvọng.
+other Khác Ýkiếncónghĩanhưngkhôngthuộcnăm
+nhómcốtlõi.
+3.2. Phân biệt other và no_aspect
+Trong hệ thống,other và no_aspect được xác định là hai trường hợp khác nhau.other là một
+khía cạnh hợp lệ, được sử dụng khi phản hồi chứa nội dung đánh giá có ý nghĩa nhưng không
+thuộc năm nhóm chính gồm chất lượng sản phẩm, giao hàng, dịch vụ chăm sóc khách hàng,
+đónggóivàgiácả.Ngượclại,no_aspectbiểuthịtrườnghợpphảnhồikhôngcungcấpđủthông
+tin để xác định một khía cạnh cụ thể, chẳng hạn câu chào hỏi, nội dung nhiễu hoặc phát biểu
+quámơhồ.Đâylà trạng thái xử lý,khôngphảimộtkhíacạnhđộclậptronghệphânloại.
+Việc phân biệt other và no_aspect giúp tránh việc dồn các phản hồi không rõ nghĩa vào other,
+đồngthờibảođảmdữliệuthốngkêchỉphảnánhnhữngkhíacạnhthựcsựcóýnghĩa.
+3.3. Vai trò của điểm đánh giá trong hệ thống
+Tronghệthống,điểmđánhgiátừ1đến5saođượcxemlà siêu dữ liệu (metadata)đikèmphản
+hồi,khôngđượcsửdụnglàmnhãnchuẩnđểxácđịnhcảmxúccủavănbản.
+Nguyên tắc này xuất phát từ thực tế rằng điểm sao và nội dung phản hồi không phải lúc nào
+cũnghoàntoàntươngứng.Mộtkháchhàngcóthểđánhgiátổngthể5saonhưngvẫnphànnàn
+về một khía cạnh cụ thể như giao hàng hoặc giá cả. Ngược lại, một phản hồi có điểm thấp vẫn
+cóthểchứanhậnxéttíchcựcđốivớimộtsốkhíacạnh.
+
+
+--- PAGE 9 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 8
+Do đó, cảm xúc của từng khía cạnh được xác định từnội dung văn bản , trong khi điểm sao
+được lưu độc lập để phục vụ hiển thị, thống kê và phân tích bổ sung. Cách tách biệt này giúp
+hạnchếviệcmôhìnhphụthuộcvàođiểmđánhgiáthayvìthựcsựphântíchngữnghĩacủaphản
+hồi.
+3.4. Yêu cầu chức năng
+Từbàitoánđãxácđịnh,hệthốngcầnđápứngcácnhómchứcnăngchínhsau:
+• Đối với khách hàng:chophépxemdanhsáchsảnphẩm,tìmkiếm,lọcvàsắpxếp;truycập
+trangchitiếtsảnphẩm;xemcácphảnhồiđãcóvàgửiđánhgiámớitrựctiếptạisảnphẩm
+đangxem.
+• Đối với quá trình thu thập phản hồi : người dùng lựa chọn điểm đánh giá và nhập nội
+dungphảnhồi.Hệthốngchophépxemtrướckếtquảphântích,hỗtrợlàmrõkhinộidung
+thuộctrạngtháino_aspect,đồngthờichophépngườidùngxácnhậnhoặcchỉnhsửatrước
+khigửichínhthức.
+• Đối với xử lý NLP: mỗiphảnhồiđượcphântíchđểxácđịnhcáccặp khía cạnh – cảm xúc
+theo hệ nhãn đã quy ước. Một phản hồi có thể chứa đồng thời nhiều khía cạnh và kết quả
+phântíchphảiđượclưucùngphảnhồitươngứng.
+• Đối với người bán: cung cấp bảng điều khiển tổng hợp phản hồi theo sáu khía cạnh
+product_quality, delivery, customer_service, packaging, price và other, kết hợp với phân
+bốcảmxúcvàcácthôngtincầnthiếtđểtheodõichấtlượngsảnphẩm,dịchvụ.
+• Đối với đánh giá mô hình:hệthốngcầncungcấpthôngtinvềmôhìnhvàcáckếtquảđánh
+giáđãđượctạoratrongquátrìnhthựcnghiệm,bảođảmsốliệuhiểnthịđượclấytừkếtquả
+thựctếcủadựán.
+3.5. Yêu cầu phi chức năng
+Bêncạnhcácchứcnăngchính,hệthốngcầnđápứngmộtsốyêucầuphichứcnăngnhằmbảo
+đảmtínhổnđịnh,nhấtquánvàkhảnăngtáilậptrongquátrìnhvậnhành.
+• Đảm bảo an toàn dữ liệu: khiphảnhồiđượcgửichínhthức,nộidunggốcphảiđượclưu
+trướcbướcphântíchtạokếtquảchínhthức,nhằmtránhmấtdữliệunếuquátrìnhsuyluận
+xảyralỗi.
+• Đảm bảo tính nhất quán:mỗiphảnhồichỉđượcghinhậnmộtkếtquảchínhchotừngkhía
+cạnh,tránhtrùnglặpdữliệuvàsailệchkhitổnghợpthốngkê.
+• Xử lý lỗi rõ ràng: khimôhìnhhoặcthànhphầnxửlýgặplỗi,hệthốngphảighinhậntrạng
+thái tương ứng thay vì tự động thay thế bằng kết quả từ một phương pháp khác mà không
+thôngbáo.
+
+
+--- PAGE 10 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 9
+• Khả năng tái lập: môhình,bộtiềnxửlý,bộthamsốvàngưỡngquyếtđịnhcầnđượclưu
+cùngphiênbảnthựcnghiệmđểcóthểtảilạivàkiểmtratrongcùngđiềukiện.
+• Khả năng triển khai: hệthốngcầnđượcđónggóivàcấuhìnhsaochocóthểchạyổnđịnh
+trênmôitrườngbàngiaomàkhôngphụthuộcvàocácthiếtlậptạmthờicủamáypháttriển.
+Cácyêucầutrênnhằmbảođảmrằngkếtquảphântíchkhôngchỉđúngvềmặtmôhìnhmàcòn
+đượclưutrữ,khaithácvàtriểnkhaimộtcáchđángtincậytrongtoànbộhệthống.
+3.6. Truy vết yêu cầu và tiêu chí kiểm chứng
+Để bảo đảm hệ thống được triển khai đúng với bài toán đã đặt ra, các yêu cầu chính cần được
+ánhxạtớinhữngtiêuchíkiểmchứngcụthể.Việctruyvếtnàygiúpđánhgiákhôngchỉkhảnăng
+hoạtđộngcủatừngthànhphần,màcònmứcđộnhấtquángiữamôhìnhNLP,dữliệulưutrữvà
+chứcnăngcủaứngdụng.
+Mộtsốyêucầutrọngtâmđượckiểmchứngnhưsau:
+• Khảnăngxửlý nhiều khía cạnh trong cùng một phản hồi đượcđánhgiábằngcáctrường
+hợpđakhíacạnhvớicảmxúckhácnhau.
+• Nguyên tắcđiểm đánh giá không quyết định cảm xúc được kiểm tra bằng các phản hồi
+cónộidungtươngtựnhưngđiểmsaokhácnhau.
+• Sáu khía cạnh product_quality, delivery, customer_service, packaging, price và other phải
+đượchỗtrợxuyênsuốttừdữliệu,đầuramôhìnhđếnthốngkêchongườibán.
+• Trạngtháino_aspectphảiđượcxửlýriêngvàkhôngđượcghinhậnnhưmộtkhíacạnhtrên
+dashboard.
+• Kết quả phân tích được lưu và sử dụng nhất quán giữa phản hồi của khách hàng và chức
+năngthốngkêcủangườibán.
+Các tiêu chí trên tạo cơ sở để xây dựng các ca kiểm thử ở những chương sau, đồng thời giúp
+phânbiệtrõlỗithuộcmôhìnhNLPvớilỗiphátsinhởtầngdữliệuhoặcứngdụng.
+4. Dữ liệu và chiến lược xây dựng tập huấn luyện
+4.1. Nguồn dữ liệu và nguyên tắc xuất xứ
+Dữliệusửdụngtrongdựánđượchìnhthànhtừnhiềunguồnnhằmphụcvụhaimụcđíchriêng
+biệt: xây dựng tập dữ liệu cho bài toán NLP và cung cấp dữ liệu sản phẩm cho ứng dụng
+thương mại điện tử.
+ĐốivớibàitoánNLP,dữliệuđượctổnghợptừmộtsốbộdữliệutiếngViệtcôngkhailiênquan
+đếnphântíchcảmxúc,phântíchtheokhíacạnhvàcácmẫudonhómxâydựngbổsung.Dohệ
+nhãncủacácnguồnkhônghoàntoàntrùngvớisáukhíacạnhcủadựán,dữliệucầnđượcchuẩn
+
+
+--- PAGE 11 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 10
+hóa và ánh xạ về taxonomy thống nhất trước khi sử dụng. Các nhãn nguồn có ý nghĩa mơ hồ
+khôngđượctựđộngquyđổisangothernếuchưacóđủcơsởngữnghĩa.
+Bêncạnhđó,dữliệusảnphẩmphụcvụphầngiaodiệnđượckhaitháctừbộ Multimodal Product
+Reviews Lazada. Thành phần này chủ yếu cung cấp thông tin sản phẩm, danh mục và đường
+dẫnhìnhảnh;khôngđượcsửdụngnhưnhãnchuẩnchobàitoánABSA.Nhữngtrườngdữliệu
+đượctạobổsungnhằmphụcvụchứcnăngminhhọacủaứngdụngcũngđượctáchbiệtkhỏidữ
+liệuhuấnluyệnmôhình.
+DomộtphầndữliệuNLPđượctổnghợphoặcbiênsoạntrongquátrìnhpháttriển,tậpdữliệu
+hiện tại được xem làdữ liệu thực nghiệm, chưa phải một corpus chuẩn đã được nhiều người
+gán nhãn và thẩm định độc lập. Vì vậy, nguồn gốc dữ liệu được lưu lại để hỗ trợ kiểm tra, tái
+lậpvàđánhgiáchấtlượngởcácgiaiđoạnsau.
+4.2. Vấn đề mất cân bằng lớp ở V1
+V1 bộc lộ mất cân bằng rất lớn: trong Train có khoảng 10.635 mẫu chất lượng sản phẩm và
+4.338 mẫu giao hàng, nhưng chỉ 26 mẫu CSKH và 15 mẫu “Khác”. Với công thức trọng số
+negative_count/positive_count,haikhíacạnhhiếmnhậntrọngsốxấpxỉ589,69và
+1.022,87.Đâykhôngphảilỗichiacho0màlàtínhiệudữliệuquálệch,khiếngradientcủacác
+lớphiếmdễtrởnênnhạyvàkhóổnđịnhvềmặtngữnghĩa.
+Hình 2. So sánh số mẫu theo khía cạnh giữa V1 và V2 (trục tung logarit).
+4.3. Mở rộng V2 cho khía cạnh hiếm
+V2bổsung880mẫuTrainvà220mẫuDevdodựánbiênsoạn/tổnghợp,nângcustomer_service
+từ26lên366mẫuTrainvàothertừ15lên235.packagingtăngtừ2.422lên2.622,pricetừ2.873
+lên3.033. TrênDev,customer_service tăngtừ 6lên91 vàother từ1 lên56. Nhờvậy,trọngsố
+hiếmgiảmmạnh:customer_servicekhoảng43,37vàotherkhoảng68,10.Dữliệuvẫnkhôngtrở
+thành “gold” chỉ vì phân bố đẹp hơn; yêu cầu tiếp theo là đánh giá semantic diversity, nhất là
+câuphủđịnh,tươngphản,đakhíacạnhvàmixedsentiment.
+
+
+--- PAGE 12 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 11
+4.4. Kiểm tra chất lượng dữ liệu
+Trướckhiđưadữliệuvàohuấnluyện,dựánthựchiệnmộtsốbướckiểmtranhằmbảođảmtính
+hợplệcủacấutrúcdữliệuvàhạnchếnguycơròrỉgiữacáctập.Cácbướcchínhbaogồmkiểm
+traschemavàhệnhãn,pháthiệnmẫutrùnglặptrongtừngtập,kiểmtratrùnglặpgiữaTrainvà
+Dev,pháthiệncácmẫugầngiốngnhauvàkiểmtramứcđộbaophủcủatừngkhíacạnh.
+Việckiểmtratrùnglặpvàcấutrúcchỉphảnánh tính sạch về mặt kỹ thuật,khôngđồngnghĩa
+với việc nhãn đã hoàn toàn chính xác về mặt ngữ nghĩa. Một mẫu có thể không trùng lặp và
+đúngđịnhdạngnhưngvẫnchứanhãnsaihoặcnộidungmơhồ.Vìvậy,kiểmtradữliệucầnkết
+hợpgiữakiểmsoáttựđộngvàràsoátcáctrườnghợpngữnghĩakhó.
+Bảng 5. Các lớp kiểm soát dữ liệu trước huấn luyện.
+Kiểm tra Mục đích Nếu bỏ qua
+Schema/taxonomy Bảođảmđúngsáuaspectvàbốn
+sentiment.
+Trainercóthểhọcnhãnngoàithiếtkế.
+Trùngchínhxác Tránhlặpmẫuvàròrỉsplit. Devcaogiảtạo.
+Near-duplicate Pháthiệncâugầngiốnggiữa
+Train/Dev.
+Đánhgiábịlạcquan.
+Fingerprint Khóaphiênbảndữliệu/cache. Táisửdụngcachesai.
+Phủlớphiếm ĐảmbảoCSKH/Kháccóđủvídụ. Môhìnhbỏsótkhíacạnhhiếm.
+Phủsemantic Cóphủđịnh,tươngphản,
+multi-aspect.
+F1tốtnhưngtrảinghiệmthậtkém.
+4.5. Phân chia dữ liệu và nguyên tắc sử dụng Train/Dev/Test
+Dữ liệu được phân chia theo vai trò rõ ràng nhằm hạn chế rò rỉ thông tin trong quá trình phát
+triển mô hình.Trainđược sử dụng để cập nhật tham số mô hình, trong khiDev phục vụ lựa
+chọncấuhình,ngưỡngquyếtđịnhvàtheodõihiệuquảtrongquátrìnhpháttriển.
+Tập Testđượcgiữđộclậpvàkhôngđượcsửdụngđểlựachọnlearningrate,sốepoch,threshold
+hoặc các quyết định kiến trúc. Việc điều chỉnh mô hình dựa trên kết quả Test sẽ làm mất tính
+độclậpcủatậpđánhgiávàcóthểdẫnđếnkếtquảquálạcquan.
+Nếu sử dụng thêm tậpChallenge, tập này được dành cho các trường hợp có độ khó cao hoặc
+cấu trúc ngữ nghĩa đặc biệt nhằm kiểm tra khả năng tổng quát hóa của mô hình. Kết quả cuối
+cùngchỉnênđượccôngbốsaukhiquytrìnhhuấnluyệnvàtiêuchílựachọnmôhìnhđãđược
+cốđịnh.
+4.6. Chiến lược nâng chất lượng dữ liệu theo lỗi thực tế
+Saukhimôhìnhđãhoạtđộngổnđịnh,việccảithiệndữliệuđượcthựchiệndựatrên các nhóm
+lỗi thực tế thay vì chỉ tăng số lượng mẫu. Các trường hợp dự đoán sai được phân loại theo
+
+
+--- PAGE 13 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 12
+nguyênnhânnhưbỏsótkhíacạnh,pháthiệnthừa,saicảmxúc,nhầmothervớino_aspect,hoặc
+xửlýchưatốtcáccâuphủđịnh,tươngphảnvàđakhíacạnh.
+Các mẫu sai có giá trị được rà soát, gán lại nhãn và bổ sung có kiểm soát vào tập huấn luyện,
+đồngthờitránhtrùnglặpvớiDevvàTest.Dữliệutổnghợpbằngmôhìnhngônngữcóthểđược
+sử dụng để tạo thêm biến thể cho các nhóm ít mẫu, nhưng cần được kiểm tra lại nhãn và chỉ
+đóngvaitròhỗtrợ.
+Đối với các khía cạnh còn thiếu dữ liệu như customer_service và other, mục tiêu không chỉ là
+tăng số lượng mà còn phải mở rộngđộ đa dạng ngữ nghĩa . Sau mỗi lần cập nhật dữ liệu, các
+bước kiểm tra schema, trùng lặp và phiên bản dữ liệu cần được thực hiện lại để bảo đảm tính
+nhấtquánvàkhảnăngtáilập.
+4.7. Chuẩn hóa và tiền xử lý phản hồi tiếng Việt
+Phảnhồitrongthươngmạiđiệntửthườngcónhiềuđặcđiểmkhácvớivănbảnchuẩn,nhưviết
+tắt,kéodàikýtự,thiếudấu,sửdụngemoji,lỗichínhtảhoặcxenlẫntừtiếngAnh.Vìvậy,bước
+chuẩn hóa cần được thực hiện theo hướng bảo thủ: xử lý các lỗi hình thức rõ ràng nhưng hạn
+chếthayđổinhữngthànhphầncóthểmangthôngtincảmxúc.
+ĐốivớiPhoBERT,tínhnhấtquáncủaquátrìnhphânđoạntừcóvaitròđặcbiệtquantrọng.Văn
+bảntronggiaiđoạnhuấnluyệnvàsuyluậnphảisửdụngcùngmộtquytrìnhchuẩnhóavàphân
+đoạnbằngVnCoreNLP,nhằmtránhthayđổiphânphốitokenđầuvàocủamôhình.
+Mộtsốtrườnghợpnhưvănbảnkhôngdấu,emojihoặccáchviếtkhôngchuẩnđượcxemlàcác
+trườnghợpcầnkiểmtrariêng.Nếucácdạngnàyxuấthiệnđángkểtrongdữliệuthựctế,chúng
+cần được bổ sung có kiểm soát vào tập huấn luyện và tập đánh giá thay vì xử lý bằng các luật
+suydiễncảmxúccốđịnh.
+Nội dung phản hồi gốc vẫn được giữ nguyên trong cơ sở dữ liệu. Văn bản sau chuẩn hóa chỉ
+đượcsửdụnglàmđầuvàochomôhình,quađóbảođảmkhảnăngtruyvếtkếtquảvàchophép
+táixửlýdữliệukhipipelinetiềnxửlýđượcthayđổi.
+5. Kiến trúc tổng thể của hệ thống
+Hệthốngđượcthiếtkếtheokiếntrúcphânlớp,trongđógiaodiệnngườidùng,xửlýnghiệpvụ,
+phântíchNLP,lưutrữdữliệuvàhộithoạiđượctáchbiệtvềtráchnhiệm.Nguyêntắcchínhcủa
+kiếntrúclà PhoBERT chịu trách nhiệm xác định khía cạnh và cảm xúc, Rasa điều phối hội
+thoại, còn các thành phần phụ trợ chỉ khai thác hoặc làm giàu kết quả đã được mô hình
+xác định.
+
+
+--- PAGE 14 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 13
+Hình 3. Kiến trúc tổng thể và ranh giới trách nhiệm giữa các thành phần.
+5.1. Kiến trúc ứng dụng
+ỨngdụngsửdụngFastAPIlàmlớpxửlýwebvànghiệpvụ,kếthợpvớiSQLAlchemyđểtruy
+cậpcơsởdữliệu.Giaodiệnkháchhàngvàngườibántươngtácvớicácchứcnăngcủahệthống
+thôngqualớpứngdụngnày.Cácthànhphầnchínhgồmdịchvụsảnphẩm,dịchvụphảnhồi,bộ
+phân tích PhoBERT, lớp trích xuất bằng chứng, Rasa và thành phần phân tích dành cho người
+bán. Dịch vụ phản hồi đóng vai trò trung gian giữa giao diện, mô hình NLP và cơ sở dữ liệu,
+quađótránhviệccácthànhphầngiaodiệngọitrựctiếpmôhìnhtheonhiềuluồngkhácnhau.
+5.2. Luồng xử lý phản hồi
+Khingườidùnggửiphảnhồichínhthức,hệthốngtrướchếtkiểmtradữliệuđầuvàovàlưunội
+dungphảnhồigốc.Sauđó,vănbảnđượcchuyểntớibộphântíchPhoBERTđểxácđịnhcáccặp
+khía cạnh – cảm xúc.Kếtquảmôhìnhđượckiểmtratheoschemathốngnhấttrướckhilưuvào
+cơsởdữliệu.Tùykếtquảxửlý,phảnhồiđượcghinhậnởtrạngtháithànhcông,no_aspecthoặc
+lỗi.Việclưunộidunggốctrướcbướcsuyluậngiúpbảođảmphảnhồicủangườidùngkhôngbị
+mấtkhimôhìnhhoặcthànhphầntíchhợpxảyrasựcố.Đốivớichứcnăngxemtrước,kếtquả
+phân tích chỉ mang tính tạm thời và chưa được ghi nhận vào dữ liệu thống kê chính thức. Chỉ
+sau khi người dùng xác nhận và gửi phản hồi, hệ thống mới thực hiện quy trình lưu trữ chính
+thức.
+5.3. Ranh giới giữa PhoBERT và lớp trích xuất bằng chứng
+PhoBERTlàthànhphầnchịutráchnhiệmchínhtrongviệcxácđịnh khía cạnhvà cảm xúccủa
+phản hồi. Lớp trích xuất bằng chứng chỉ có nhiệm vụ tìm các cụm từ giúp giải thích kết quả,
+
+
+--- PAGE 15 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 14
+chẳnghạn “giao hàng chậm”, “hộp bị móp” hoặc “đường may lỗi”.Mộtbằngchứngchỉđược
+chấp nhận khi khía cạnh tương ứng đã xuất hiện trong kết quả của PhoBERT. Thành phần này
+khôngđượctựbổsung,xóahoặcthayđổikhíacạnhvàcảmxúcdomôhìnhdựđoán.Cáchphân
+táchtrêngiúpduytrìmộtnguồnquyếtđịnhNLPthốngnhất,đồngthờivẫncungcấpthôngtin
+giảithíchdễhiểuchongườidùngvàngườibán.
+5.4. Vai trò của Rasa trong kiến trúc
+Rasa được sử dụng ở lớp hội thoại để quản lý trạng thái tương tác và xác định bước tiếp theo
+của quá trình thu thập phản hồi. Khi cần phân tích nội dung, Rasa gọi cùng dịch vụ NLP được
+ứngdụngchínhsửdụngthayvìtriểnkhaimộtbộphânloạicảmxúcđộclập.
+Nhờ đó, thay đổi trong luồng hội thoại không làm thay đổi logic phân tích ngữ nghĩa của
+PhoBERT, và việc cập nhật mô hình NLP cũng không yêu cầu thiết kế lại toàn bộ luồng hội
+thoại.Tronggiaodiệncủahệthống,trợlýphảnhồiđượcđặttrựctiếptạitrangchitiếtsảnphẩm
+đểduytrìngữcảnhgiữasảnphẩmđangxemvànộidungphảnhồicủakháchhàng.
+5.5. Lưu trữ dữ liệu và phân tích cho người bán
+Cơ sở dữ liệu lưu riêng nội dung phản hồi gốc và kết quả phân tích NLP. Mỗi phản hồi có thể
+chứa nhiều khía cạnh, nhưng đối với cùng một khía cạnh chỉ có một kết quả phân tích chính
+đượcsửdụngchothốngkê,quađótránhhiệntượngđếmlặp.
+Bảng điều khiển của người bán khai thác trực tiếp các kết quả đã được lưu thay vì gọi lại mô
+hìnhmỗikhitrangđượcmở.Cáchthiếtkếnàygiúpgiảmthờigianxửlý,bảođảmthốngkênhất
+quánvàtránhtrườnghợpcùngmộtphảnhồichokếtquảkhácnhaukhiphiênbảnmôhìnhthay
+đổi.
+Cácbằngchứngchitiếtcóthểđượclưuhoặckhaithácbổsungđểgiảithíchnguyênnhâncủa
+phảnhồi,nhưngkhônglàmthayđổisốlượngkhíacạnhđượctínhtrongthốngkêchính.
+5.6. Nguyên tắc tích hợp và bảo đảm tính nhất quán
+Cácthànhphầntronghệthốngđượckếtnốithôngquacácgiaodiệnxửlýthốngnhấtnhằmhạn
+chếviệccùngmộtchứcnăngđượctriểnkhaitheonhiềucáchkhácnhau.KếtquảNLPphảituân
+thủhệsáukhíacạnhvàbốntrạngtháicảmxúcđãquyướctrướckhiđượclưuhoặchiểnthị.
+Siêudữliệusảnphẩmchỉđượcsửdụngtrongnhữngchứcnăngcầnthôngtinngữcảnhvàkhông
+được tự động ghép vào nội dung phản hồi để tác động đến dự đoán của PhoBERT. Tương tự,
+Rasavàlớptríchxuấtbằngchứngkhôngcóquyềnthayđổikếtquảcốtlõicủamôhình.
+Việctáchrõtráchnhiệmgiữacácthànhphầngiúphệthốngdễkiểmthử,bảotrìvàthaythếtừng
+mô-đunmàkhônglàmthayđổitoànbộluồngxửlý.
+
+
+--- PAGE 16 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 15
+5.7. Tính nhất quán và khả năng khôi phục dữ liệu
+HệthốnglưuphảnhồigốctrướckhithựchiệnphântíchNLPnhằmbảođảmdữliệungườidùng
+không bị mất nếu quá trình suy luận xảy ra lỗi. Kết quả phân tích sau đó được kiểm tra và lưu
+theonguyêntắcmỗiphảnhồichỉcómộtkếtquảchínhchotừngkhíacạnh.
+Cáctrạngtháixửlýnhưpending,no_aspectvàfailedđượcduytrìđểhỗtrợtheodõivàxửlýlại
+khicần.Đồngthời,kếtquảtrảvềchongườidùngvàdữliệusửdụngtrêndashboardphảixuất
+pháttừcùngmộtkếtquảphântíchđãđượcxácthực,quađóhạnchếsaikhácgiữacáctầngcủa
+hệthống.
+6. Thiết kế mô hình PhoBERT đa nhiệm cho ABSA
+Mô hình được xây dựng theo kiến trúc đa nhiệm, sử dụngPhoBERT-base-v2làm bộ mã hóa
+dùngchungvàhainhánhdựđoánchuyênbiệt.Nhánhthứnhấtxácđịnhcáckhíacạnhxuấthiện
+trongphảnhồi,trongkhinhánhthứhaidựđoáncảmxúctươngứngvớitừngkhíacạnh.
+Hình 4. Kiến trúc mô hình đa nhiệm PhoBERT của dự án.
+6.1. Tiền xử lý tiếng Việt
+Văn bản đầu vào được xử lý theo chuỗi:chuẩn hóa văn bản → phân đoạn từ bằng
+VnCoreNLP → token hóa bằng PhoBERT → padding hoặc truncation theo độ dài tối đa .
+Quy trình này được sử dụng thống nhất trong cả huấn luyện và suy luận nhằm bảo đảm phân
+phốitokenđầuvàokhôngthayđổigiữahaigiaiđoạn.
+Đốivớiphảnhồivượtquágiớihạnđộdàicủamôhình,hệthốngcóthểchiavănbảnthànhcác
+cửa sổ chồng lấn trước khi suy luận. Các cửa sổ vẫn sử dụng cùng quy trình tiền xử lý và kết
+quảsauđóđượchợpnhấttronghệsáukhíacạnhvàbốntrạngtháicảmxúcđãxácđịnh.
+
+
+--- PAGE 17 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 16
+6.2. Nhánh phát hiện khía cạnh
+Gọi h là biểu diễn ngữ nghĩa của phản hồi do PhoBERT sinh ra. Nhánh phát hiện khía cạnh
+sử dụng một lớp tuyến tính để tạo sáu logit, tương ứng với sáu khía cạnh của hệ thống. Hàm
+sigmoidđượcápdụngđộclậpchotừnglogit:
+pa =sigmoid(Wah + ba)
+Domộtphảnhồicóthểchứanhiềukhíacạnhđồngthời,đâylàbàitoán phân loại đa nhãn.Khía
+cạnh a được xem là xuất hiện khi xác suấtpa vượt qua ngưỡng quyết địnhτa. Các ngưỡng có
+thểđượcxácđịnhriêngchotừngkhíacạnhdựatrêntậpDevthayvìsửdụngmộtgiátrịchung
+chotoànbộhệnhãn.
+6.3. Nhánh phân loại cảm xúc theo khía cạnh
+Vớimỗikhíacạnh,môhìnhdựđoánmộttrongbốntrạngtháicảmxúc:positive,neutral,negative
+vàmixed.Nhánhnàytạođầuragồm 6 × 4logit,tươngứngvớisáukhíacạnhvàbốnlớpcảm
+xúc. Trong quá trình huấn luyện, cảm xúc chỉ được tính đối với những khía cạnh thực sự xuất
+hiện trong mẫu. Các vị trí còn lại được đánh dấu bằng ignore_index và loại khỏi hàm mất mát.
+Trườnghợpmộtbatchkhôngchứamụctiêucảmxúchợplệ,thànhphầnmấtmátcảmxúcđược
+bỏquađểtránhgiátrịkhôngxácđịnh.
+6.4. Hàm mất mát và trọng số lớp
+Hainhiệmvụđượctốiưuđồngthờithôngquahàmmấtmáttổnghợp:
+L = λaLaspect + λsLsentiment
+Trongđó, LaspectlàBinaryCross-Entropychobàitoánpháthiệnđanhãn,còn LsentimentlàCross-
+Entropycómặtnạchobàitoánphânloạicảmxúc.Cáchệsố λavà λsđiềuchỉnhmứcđónggóp
+củatừngnhiệmvụtrongquátrìnhhuấnluyện.
+Đốivớidữliệumấtcânbằng,nhánhpháthiệnkhíacạnhcóthểsửdụngtrọngsốdươngđểtăng
+mức đóng góp của các lớp hiếm. Tuy nhiên, điều chỉnh trọng số không thay thế được việc bổ
+sungdữliệucóchấtlượngvàđộđadạngngữnghĩaphùhợp.
+6.5. Xử lý các cấu trúc ngữ nghĩa phức tạp
+Mộtyêucầuquantrọngcủabàitoánlàxửlýcácphảnhồicóphủđịnh,tươngphảnhoặcnhiều
+khíacạnhvớicảmxúckhácnhau.Chẳnghạn,câu “Giao hàng không hề chậm”khôngnênđược
+hiểulàphảnhồitiêucựcchỉdoxuấthiệntừ “chậm”,trongkhicâu “Sản phẩm đẹp nhưng giao
+hàng chậm” chứahaikhíacạnhvớihaitrạngtháicảmxúckhácnhau.
+Đối với nhãn mixed, hệ thống chỉ sử dụng khicùng một khía cạnh chứa các bằng chứng tích
+cựcvàtiêucựcđángkể.Trườnghợphaikhíacạnhkhácnhaumanghaicảmxúctráichiềuvẫn
+
+
+--- PAGE 18 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 17
+đượcbiểudiễnthànhhaicặpkhíacạnh–cảmxúcriêngbiệt.
+Cáctrườnghợpngữnghĩakhóđượcxửlývàđánhgiádựatrênbiểudiễnngữcảnhcủamôhình,
+thayvìsửdụngcácluậttừkhóađểtựđộngthayđổikếtquảdựđoáncốtlõi.
+6.6. Suy luận và quyết định no_aspect
+Trong quá trình suy luận, xác suất của từng khía cạnh được so sánh với ngưỡng tương ứng đã
+xác định trong giai đoạn phát triển mô hình. Chỉ những khía cạnh vượt ngưỡng mới được đưa
+sangbướcxácđịnhcảmxúc.
+Nếu không có khía cạnh nào đạt ngưỡng, phản hồi được xác định ở trạng thái no_aspect thay
+vìbắtbuộcmôhìnhphảichọnkhíacạnhcóxácsuấtcaonhất.Cơchếnàygiúphạnchếcácdự
+đoán không có đủ bằng chứng và cho phép hệ thống yêu cầu người dùng làm rõ nội dung khi
+cầnthiết.
+Cácgiátrịsigmoidvàsoftmaxđượcxemlà điểm tin cậy của mô hình,khôngmặcnhiênđược
+diễngiảinhưxácsuấtđãhiệuchuẩn.Đốivớiphảnhồidàiđượcchiathànhnhiềucửasổ,kếtquả
+giữacáccửasổphảiđượchợpnhấttheomộtquytắcthốngnhấttrướckhitạođầuracuốicùng.
+7. Quy trình huấn luyện, kiểm soát sai lỗi và tái lập
+Quá trình huấn luyện được tổ chức theo một quy trình có kiểm soát nhằm hạn chế lỗi dữ liệu,
+lỗisốhọcvàsailệchgiữacáclầnthựcnghiệm.Quytrìnhtổngquátgồmkiểmtradữliệuvàcấu
+hình, tiền xử lý, huấn luyện PhoBERT, đánh giá trên tập Dev, lưu checkpoint và đóng gói mô
+hìnhcùngcácthôngtincầnthiếtchoviệctáilập.
+Hình 5. Quy trình huấn luyện Transformer có kiểm soát.
+
+
+--- PAGE 19 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 18
+7.1. Kiểm tra trước khi huấn luyện
+Trướckhibắtđầuquátrìnhtinhchỉnhmôhình,hệthốngthựchiệnbướckiểmtratiềnđiềukiện
+nhằmpháthiệnsớmcáclỗicóthểảnhhưởngđếntoànbộquátrìnhhuấnluyện.Nộidungkiểm
+tra bao gồm tính hợp lệ của tập Train và Dev, hệ nhãn, cấu hình mô hình, tham số tiền xử lý,
+trọng số lớp và khả năng thực hiện lan truyền thuận – ngược mà không xuất hiện giá trị bất
+thường.
+Việc kiểm tra trước giúp hạn chế trường hợp một quá trình huấn luyện kéo dài phải dừng giữa
+chừngdolỗidữliệuhoặccấuhìnhcóthểpháthiệntừđầu.Đồngthời,cấuhìnhthựcnghiệmvà
+phiênbảndữliệuđượcghinhậnđểphụcvụviệcđốichiếuvàtáilậpvềsau.
+7.2. Cấu hình huấn luyện điển hình
+Cácthínghiệmsửdụngvinai/phobert-base-v2làmmôhìnhnềnvàđượctinhchỉnhtrêndữliệu
+củabàitoánABSA.Nhữngthamsốchínhnhưsốepoch,learningrate,độdàichuỗitốiđa,seed,
+optimizer và thiết bị tính toán được cố định trong từng chuỗi thực nghiệm nhằm bảo đảm tính
+côngbằngkhisosánhgiữacácphiênbảnmôhình.
+Bảng 6. Cấu hình huấn luyện chính.
+Tham số Giá trị dùng trong các run V2/V2.1
+Backbone vinai/phobert-base-v2
+Epoch 5
+Maxlength 256
+Learningrate 2 × 10−5
+Warmupratio 0.1
+Seed 42
+Device CUDA-NVIDIARTX4060LaptopGPU
+VnCoreNLP Cấuhìnhlocal,đườngdẫnASCIIkhichạyWindows
+Optimizer AdamW/biếnthểtươngthíchtrongtrainer
+Checkpoint Cólast.ptvàresumeguard;runkhônghợplệkhôngđượcresume
+Khisosánhcácphiênbảnmôhình,cácthamsốkhôngthuộcyếutốđangkhảosátcầnđượcgiữ
+ổn định. Điều này giúp hạn chế việc chênh lệch kết quả xuất phát đồng thời từ nhiều thay đổi
+khácnhauvàlàmgiảmkhảnăngxácđịnhnguyênnhâncảithiện.
+7.3. Tối ưu bước phân đoạn từ
+PhânđoạntừbằngVnCoreNLPlàmộtbướctiềnxửlýtươngđốitốnthờigiannếuđượclặplại
+ở mỗi epoch. Vì vậy, dữ liệu sau phân đoạn được lưu đệm và tái sử dụng trong quá trình huấn
+luyện.
+
+
+--- PAGE 20 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 19
+Bộnhớđệmchỉđượcsửdụngkhiphiênbảndữliệuvàcấuhìnhtiềnxửlýtươngứngvẫnkhông
+thayđổi.Khidữliệuhoặcquytrìnhphânđoạnthayđổi,cachecầnđượctạolạiđểtránhsửdụng
+đầuvàokhôngcònphùhợpvớithínghiệmhiệntại.
+7.4. Kiểm soát giá trị bất thường trong huấn luyện
+Trongquátrìnhhuấnluyện,cácgiátrịnhưlogit,hàmmấtmátvàgradientcầnđượctheodõiđể
+phát hiện NaN hoặc Inf. Đây là cơ chế quan trọng nhằm ngăn các lỗi số học lan truyền và làm
+hỏngtoànbộquátrìnhtốiưu.
+Hệthốngđồngthờisửdụng gradient clippingđểhạnchếhiệntượnggradienttăngquálớn.Đối
+vớinhánhcảmxúc,trườnghợpbatchkhôngchứamụctiêuhợplệđượcxửlýriêngnhưđãtrình
+bàyởChương6,tránhtínhCross-Entropytrêntậpmụctiêurỗng.
+7.5. Checkpoint và quy tắc tiếp tục huấn luyện
+Checkpointđượcsửdụngđểlưutrạngtháimôhìnhtrongquátrìnhhuấnluyện,baogồmtrọng
+sốmôhìnhvàcácthôngtincầnthiếtđểtiếptụcquátrìnhtốiưukhiphùhợp.
+Tuy nhiên, một checkpoint chỉ được tiếp tục sử dụng khi có thể xác định rõ nguồn gốc, phiên
+bản dữ liệu, cấu hình huấn luyện và trạng thái hoàn thành của lần chạy trước. Các checkpoint
+khôngđầyđủhoặckhôngbảođảmtínhnhấtquánvớicấuhìnhhiệntạikhôngđượcsửdụngđể
+tiếptụchuấnluyện,vìđiềunàycóthểlàmsailệchviệcsosánhgiữacácthínghiệm.
+Nguyêntắcnàygiúpphânbiệtgiữa khả năng tiếp tục về mặt kỹ thuật và tính hợp lệ về mặt
+thực nghiệm.
+7.6. Quản lý artifact và khả năng tái lập
+Mỗi mô hình sau huấn luyện được lưu cùng các thông tin cần thiết để xác định chính xác điều
+kiệntạoranó,baogồmtrọngsốmôhình,tokenizer,cấuhình,ngưỡngquyếtđịnh,phiênbảndữ
+liệuvàcácchỉsốđánhgiáliênquan.
+Việcquảnlýartifacttheophiênbảngiúptránhnhầmlẫngiữacácmôhìnhđượctạoraởnhững
+giaiđoạnkhácnhau.Chỉnhữngartifactđápứngđầyđủyêucầuvềcấutrúc,khảnăngtảilạivà
+kếtquảđánhgiámớiđượclựachọnđểtíchhợpvàohệthống.
+Để bảo đảm khả năng tái lập, kết quả báo cáo cần có thể truy vết vềphiên bản dữ liệu, cấu
+hình huấn luyện và artifact cụ thể .Cáchtổchứcnàychophépđốichiếukếtquảgiữacáclần
+thựcnghiệmvàhạnchếviệcsửdụngnhầmmôhìnhhoặccheckpointkhôngphùhợp.
+8. Phương pháp đánh giá và thực nghiệm
+Việcđánhgiámôhìnhđượcthựchiệntheonhiềumứcnhằmphảnánhcảhiệuquảdựđoántổng
+thể và khả năng xử lý từng khía cạnh. Các kết quả trên tập Dev được sử dụng trong quá trình
+phát triển mô hình, trong khi tập Test được giữ độc lập để phục vụ đánh giá cuối cùng sau khi
+cấuhìnhvàquytrìnhhuấnluyệnđãđượccốđịnh.
+
+
+--- PAGE 21 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 20
+8.1. Baseline và mô hình so sánh
+Dự án sử dụng ba nhóm mô hình để so sánh:mô hình dựa trên luật , mô hình học máy
+truyền thống sử dụng TF-IDF kết hợp LinearSVM hoặc Logistic Regression , vàmô hình
+PhoBERT được tinh chỉnh cho bài toán ABSA . Các mô hình cơ sở được giữ lại nhằm xác
+định mức cải thiện mà biểu diễn ngữ cảnh của Transformer mang lại so với phương pháp dựa
+trêntừkhóahoặcđặctrưngtuyếntính.
+Khisosánhcácphiênbảnmôhình,mỗithínghiệmcầnxácđịnhrõyếutốđượcthayđổivàgiữ
+ổnđịnhcácđiềukiệncònlạinhưbackbone,seed,optimizer,độdàichuỗivàphươngphápđánh
+giá.Cáchtổchứcnàygiúphạnchếviệcnhiềuthayđổixảyrađồngthời,từđóhỗtrợxácđịnh
+nguyênnhâncủasựcảithiệnhoặcsuygiảmkếtquả.
+Các mô hình được đánh giá trên cùng một quy trình phù hợp với mục đích so sánh. Tập Dev
+được sử dụng để lựa chọn cấu hình và ngưỡng quyết định, trong khi tập Test không được sử
+dụngđểđiềuchỉnhmôhình.
+Bảng 7. Các mô hình và vị trí trong chuỗi thực nghiệm.
+Mô hình Vai trò Kết quả nội bộ tiêu biểu
+Rulebaseline Mốctốithiểudựaquytắc. Teststrict-unionPairMacro-F1≈
+0,1917ởV1.
+LinearSVM Baselinehọcmáycổđiển. Dev≈0,4324;Test≈0,3712ởV1.
+PhoBERTV1 Transformerthựcnghiệmđầu
+tiên.
+BestDev≈0,4662,5/5epoch.
+PhoBERTV2repaired Winnerkỹthuậthiệntại. Devnộibộ≈0,8976;artifactvẫn
+experimental,khôngscientific-final.
+V2.1AI-reviewed Biếnthểbổsungkiểmtra. Giữprovenance;khôngphảiwinner
+runtime.
+
+
+--- PAGE 22 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 21
+Hình 6. So sánh một số mốc Dev strict-union Pair Macro-F1 trong quá trình phát triển.
+8.2. Các chỉ số đánh giá
+Do bài toán có tính chất đa nhãn và mỗi phản hồi có thể chứa nhiều cặp khía cạnh – cảm xúc,
+mộtchỉsốaccuracyduynhấtkhôngphảnánhđầyđủchấtlượngmôhình.
+Chỉsốchínhđượcsửdụnglà Pair Macro-F1,trongđómỗicặpkhíacạnh–cảmxúcđượcxem
+nhưmộtđơnvịdựđoán.Chỉsốnàyđồngthờiphảnánhlỗibỏsótkhíacạnh,dựđoánthừakhía
+cạnhvàdựđoánsaicảmxúc.
+Bêncạnhđó,hệthốngsửdụngmộtsốchỉsốbổsung:
+• Pair Micro-F1:phảnánhhiệuquảtổngthểtrêntoànbộcáccặpdựđoán.
+• Aspect Macro-F1:đánhgiáriêngkhảnăngpháthiệnkhíacạnh.
+• Conditional Sentiment Macro-F1: đánh giá khả năng dự đoán cảm xúc khi khía cạnh đã
+đượcxácđịnh.
+• Exact Match: chỉ tính một phản hồi là đúng khi toàn bộ tập cặp dự đoán khớp với nhãn
+chuẩn.
+• Precision, Recall và F1 theo từng khía cạnh: dùngđểtheodõichấtlượngtrêncáclớpít
+dữliệunhưcustomer_servicevàother.
+Việcsửdụngđồngthờicácchỉsốtrêngiúpxácđịnhlỗichủyếunằmởbướcpháthiệnkhíacạnh
+haybướcphânloạicảmxúc.CôngthứcchitiếtđượctrìnhbàytrongPhụlụcG.
+
+
+--- PAGE 23 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 22
+8.3. Các bộ chẩn đoán ngoài Dev tổng hợp
+8.4. Kiểm tra chẩn đoán và phân tích lỗi
+NgoàicácchỉsốđịnhlượngtrênDev,dựánsửdụngcácbộkiểmtrangữnghĩanhằmđánhgiá
+nhữngtrườnghợpkhónhưphảnhồiđakhíacạnh,phủđịnh,tươngphản,cảmxúcmixed,other
+vàno_aspect.Cácbộkiểmtranàygiúppháthiệnnhữnghạnchếkhóquansátchỉthôngquamột
+chỉsốtổnghợp.
+Cáclỗiđượcphânthànhmộtsốnhómchính: bỏ sót khía cạnh, dự đoán thừa khía cạnh, xác
+định sai cảm xúc và nhầm lẫn giữa other với no_aspect .Vớimỗinhómlỗi,cầnxemxétkết
+quả dự đoán, độ tin cậy và nhãn chuẩn để xác định nguyên nhân trước khi lựa chọn biện pháp
+cảithiện.
+Nếu lỗi xuất phát từ khả năng nhận diện ngữ nghĩa của PhoBERT, hướng xử lý ưu tiên là rà
+soát nhãn, bổ sung các trường hợp khó hoặc điều chỉnh ngưỡng trên Dev. Ngược lại, lỗi thuộc
+lớpbằngchứng,lưutrữhoặctíchhợpcầnđượcxửlýtạithànhphầntươngứng,khôngđượcsử
+dụngđểtựđộngthayđổikếtquảdựđoáncốtlõicủamôhình.
+Các bộ kiểm tra chẩn đoán được sử dụng để phát hiện lỗi và hạn chế hồi quy trong quá trình
+pháttriển.ChúngkhôngthaythếchotậpTestđộclập.
+Bảng 8. Chẩn đoán kỹ thuật ở trạng thái NLP core được đóng băng.
+Nhóm kiểm tra PASS W ARN FAIL Ý nghĩa
+Hardsemanticsuite(44case) 27 2 15 Câukhó,multi-aspect,mixed;còn
+giớihạnsemantic.
+Semanticregression 29 0 3 Bảovệcáccasengữnghĩađãbiết.
+Mergedintegration 27 5 0 Khôngcólỗi
+issue/response/integrationtrongsuite
+này.
+8.5. Nguyên tắc diễn giải kết quả
+Kết quả trên Dev cần được diễn giải thận trọng vì hiệu quả cao trên tập phát triển không đồng
+nghĩa với hiệu quả tương đương trên dữ liệu thực tế. Sự khác biệt về miền dữ liệu, chất lượng
+nhãnvàmứcđộphứctạpcủaphảnhồicóthểlàmgiảmkhảnăngtổngquáthóacủamôhình.
+Bên cạnh chỉ số tổng hợp, cần xem xét kết quả theo từng khía cạnh. Một mô hình có F1 trung
+bìnhcaonhưngthườngxuyênbỏsótcustomer_servicehoặcothervẫnchưađápứngđầyđủyêu
+cầucủahệthốngvềviệchỗtrợđồngđềusáukhíacạnh.
+TậpTestphảiđượcgiữđộclậptrongtoànbộquátrìnhpháttriển.Saukhidữliệu,cấuhìnhhuấn
+luyện,ngưỡngquyếtđịnhvàtiêuchílựachọnmôhìnhđãđượccốđịnh,Testmớiđượcsửdụng
+
+
+--- PAGE 24 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 23
+để đánh giá cuối cùng. Nếu kết quả Test thấp hơn Dev, đây cần được xem là thông tin về khả
+năngtổngquáthóacủamôhình,khôngphảicơsởđểtiếptụcđiềuchỉnhmôhìnhdựatrênTest.
+Khisosánhcácphiênbảnmôhình,kếtluậnchỉnênđượcđưarakhisựkhácbiệtđượcquansát
+nhất quán trên các chỉ số tổng hợp, kết quả theo từng khía cạnh và phân tích lỗi. Các phương
+pháp ước lượng độ bất định như bootstrap hoặc khoảng tin cậy có thể được xem xét trong các
+nghiêncứutiếptheonếucầnđánhgiásâuhơnvềýnghĩacủachênhlệchgiữacácmôhình.
+9. Tích hợp Rasa, lớp bằng chứng và lưu trữ dữ liệu
+9.1. Luồng hội thoại thu thập phản hồi
+Trợlýphảnhồiđượctíchhợptrựctiếpvào trang chi tiết sản phẩm,nhờđóngữcảnhsảnphẩm
+đangđượcđánhgiáđượcduytrìtrongtoànbộquátrìnhtươngtác.
+Ngườidùnglầnlượtlựachọnđiểmđánhgiá,nhậpnộidungphảnhồivàxemtrướckếtquảphân
+tích.Nếuhệthốngkhôngxácđịnhđượckhíacạnhphùhợp(no_aspect),ngườidùngđượcyêu
+cầulàmrõnộidung.Trướckhigửichínhthức,ngườidùngcóthểxácnhậnhoặcchỉnhsửaphản
+hồi.
+Thiết kế này tập trung quá trình đánh giá tại một vị trí duy nhất, hạn chế sự trùng lặp giữa các
+thành phần giao diện và duy trì mối liên hệ rõ ràng giữa sản phẩm, điểm đánh giá và nội dung
+phảnhồi.
+Hình 7. Luồng phản hồi khách hàng trên trang chi tiết sản phẩm.
+9.2. Tích hợp Rasa với dịch vụ ABSA
+Rasađượcsửdụngđểquảnlýtrạngtháihộithoạivàxácđịnhbướctươngtáctiếptheo.Khicần
+phân tích nội dung phản hồi, Rasa gọicùng dịch vụ ABSA được giao diện ứng dụng sử dụng
+thayvìtriểnkhaimộtbộphânloạicảmxúcđộclập.
+
+
+--- PAGE 25 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 24
+Cáchthiếtkếnàybảođảmrằngkếtquảphântíchkhôngphụthuộcvàokênhtươngtác.Dùphản
+hồiđượcgửitừgiaodiệntrựctiếphaythôngqualuồnghộithoạiRasa,quyếtđịnhvềkhíacạnh
+vàcảmxúcvẫndocùngmộtmôhìnhPhoBERTthựchiện.
+CáchànhđộngtùybiếncủaRasavìvậychỉđóngvaitròkếtnốigiữahộithoạivàdịchvụnghiệp
+vụ,phùhợpvớinguyêntắcphântáchtráchnhiệmđãtrìnhbàyởChương5[5].
+9.3. Lưu trữ và quản lý trạng thái phản hồi
+Khingườidùnggửiphảnhồichínhthức,nộidunggốcđượclưutrướckhithựchiệnbướcphân
+tích NLP. Cách tổ chức này giúp bảo đảm dữ liệu người dùng không bị mất nếu quá trình suy
+luậnxảyralỗi.
+Mỗiphảnhồiđượcquảnlýthôngquacáctrạngtháixửlýnhưpending,ok,no_aspectvàfailed.
+SaukhiPhoBERTtrảvềkếtquảhợplệ,cáccặpkhíacạnh–cảmxúcđượclưuliênkếtvớiphản
+hồitươngứng.
+Đối với cùng một phản hồi, mỗi khía cạnh chỉ có một kết quả phân tích chính được sử dụng
+trongthốngkê.Nguyêntắcnàygiúphạnchếdữliệutrùnglặpvàbảođảmsốliệutrênbảngđiều
+khiểnngườibánphảnánhđúngkếtquảđãđượcghinhận.
+9.4. Lớp bằng chứng và xử lý phủ định
+Bêncạnh kếtquả khíacạnh –cảm xúc, hệthống sửdụng mộtlớp tríchxuất bằngchứng nhằm
+xácđịnhcáccụmtừcóthểgiúpgiảithíchdựđoáncủamôhình.Chẳnghạn,vớikếtquảdelivery
+→negative,hệthốngcóthểtríchxuấtcụm “giao hàng chậm” làmbằngchứngminhhọa.
+LớpbằngchứngchỉhoạtđộngtrênnhữngkhíacạnhđãđượcPhoBERTxácđịnhvà không có
+quyền bổ sung, loại bỏ hoặc thay đổi cảm xúc củakếtquảmôhình.Mộtkhíacạnhcóthểchứa
+nhiềubằngchứngchitiết,nhưngvẫnchỉđượctínhmộtlầntrongthốngkêchính.
+Cácluậttríchxuấtđượcthiếtkếthậntrọngđốivớicấutrúcphủđịnh.Vídụ,cáccâu “giao hàng
+không hề chậm” hoặc “hộp không bị móp” không được tạo bằng chứng tiêu cực chỉ dựa trên
+sựxuấthiệncủacáctừ “chậm”hoặc “móp”.Cơchếnàygiúplớpbằngchứnghỗtrợtínhgiải
+thíchmàkhôngthaythếkhảnăngphântíchngữnghĩacủaPhoBERT.
+9.5. Xử lý các trường hợp hội thoại đặc biệt
+KếtquảNLPđượcchuyểnthànhphảnhồihộithoạibằngngônngữtựnhiênthayvìhiểnthịtrực
+tiếpcácmãnhãnkỹthuật.Vớiphảnhồiđakhíacạnh,hệthốngtổnghợpcáckếtquảthànhnội
+dungngắngọnđểngườidùngdễkiểmtratrướckhigửichínhthức.
+Đốivớino_aspect,hệthốngyêucầungườidùngcungcấpthôngtincụthểhơnthayvìtựđộng
+gánvàoother.Cáchxửlýnàygiúphạnchếviệcghinhậncáckhíacạnhkhôngcóđủbằngchứng.
+Điểm đánh giá cũng không được sử dụng để thay đổi cảm xúc do PhoBERT xác định. Trường
+hợp điểm sao và nội dung văn bản không thống nhất, hai thông tin vẫn được lưu độc lập theo
+đúngvaitròđãxácđịnhởChương3.
+
+
+--- PAGE 26 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 25
+Nếulớpbằngchứngkhôngtìmđượccụmtừgiảithích nhưngPhoBERTđãxácđịnhđượccặp
+khía cạnh – cảm xúc hợp lệ, kết quả dự đoán vẫn được chấp nhận. Điều này bảo đảm rằng lớp
+bằng chứng chỉ đóng vai trò hỗ trợ diễn giải, không phải điều kiện quyết định tính hợp lệ của
+đầuraNLP.
+10. Thiết kế ứng dụng thương mại điện tử
+Ứng dụng được xây dựng như môi trường minh họa cho quy trình thu thập, phân tích và khai
+thácphảnhồikháchhàng.Thiếtkếtậptrungvàohainhómngườidùngchính: khách hàng,thực
+hiện xem sản phẩm và gửi phản hồi; vàngười bán, theo dõi các kết quả phân tích được tổng
+hợptừdữliệuđãlưu.
+10.1. Danh mục sản phẩm và dữ liệu hiển thị
+Danhmụccủaứngdụnggồmkhoảng 3.000 sản phẩm,đượctổchứctheonămnhómsảnphẩm
+chính. Mỗi trang hiển thị 20 sản phẩm nhằm bảo đảm khả năng duyệt dữ liệu với quy mô lớn
+màkhôngtảitoànbộdanhmụccùnglúc.
+ThôngtinsảnphẩmđượckhaitháctừbộdữliệuLazadađãtrìnhbàyởChương4.Đốivớihình
+ảnh,hệthốngchỉlưuđườngdẫnhoặcđịachỉtàinguyêncầnthiếtthayvìđónggóitoànbộkho
+ảnh dung lượng lớn. Trường hợp hình ảnh không khả dụng, giao diện sử dụng ảnh thay thế để
+duytrìtínhổnđịnhkhihiểnthị.
+Một số thuộc tính không có nguồn dữ liệu đủ tin cậy, điển hình là giá sản phẩm, được tạo bổ
+sung nhằm phục vụ chức năng minh họa của ứng dụng. Các giá trị này chỉ được sử dụng cho
+hiểnthị,lọcvàsắpxếp,khôngthamgiavàoquátrìnhphântíchNLP.
+10.2. Lọc, sắp xếp và phân trang
+Hệ thống hỗ trợ tìm kiếm, lọc và sắp xếp sản phẩm theo các thuộc tính phù hợp với giao diện
+thươngmạiđiệntử,chẳnghạndanhmục,mứcgiávàđiểmđánhgiá.
+Cơ chế phân trang được thiết kế để duy trì các điều kiện lọc khi người dùng chuyển giữa các
+trang,đồngthờixửlýcácgiátrịđầuvàokhônghợplệnhằmtránhlàmgiánđoạnquátrìnhduyệt
+sản phẩm. Các trường hợp thiếu hình ảnh hoặc tham số lọc không đầy đủ cũng được xử lý ở
+tầngứngdụngthayvìảnhhưởngđếnthànhphầnNLP.
+Việctáchbiệtcácchứcnăngdanhmụckhỏimô-đunphântíchphảnhồigiúpbảođảmrằnglỗi
+hiểnthịhoặcphântrangkhônglàmthayđổikếtquảcủamôhìnhngônngữ.
+10.3. Trải nghiệm thu thập phản hồi
+Trangchitiếtsảnphẩmlànơitậptrungquátrìnhxemvàgửiphảnhồi.Ngoàithôngtinsảnphẩm
+vàcácđánhgiáđãcó,giaodiệntíchhợpmô-đuntrợlýphảnhồiđượctrìnhbàyởChương9.
+Kết quả phân tích được chuyển sang cách diễn đạt tiếng Việt dễ hiểu thay vì hiển thị trực tiếp
+
+
+--- PAGE 27 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 26
+các mã nhãn kỹ thuật. Người dùng có thể xem trước, xác nhận hoặc chỉnh sửa nội dung trước
+khigửichínhthức,quađóduytrìtrảinghiệmtươngtácnhấtquánvớiquytrìnhphântíchNLP.
+10.4. Bảng điều khiển người bán
+Bảng điều khiển dành cho người bán tổng hợp dữ liệu phản hồi theo sáu khía cạnh
+product_quality, delivery, customer_service, packaging, price và other. Các thông tin có thể
+được trình bày dưới dạng số lượng phản hồi, phân bố cảm xúc, các vấn đề thường gặp và xu
+hướngtheothờigian.
+Dữliệuthốngkêđượclấytừcáckếtquảphântíchđãlưutrongcơsởdữliệu,khôngthựchiện
+lại suy luận PhoBERT mỗi khi bảng điều khiển được mở. Cách thiết kế này giúp giảm chi phí
+xửlývàbảođảmtínhnhấtquángiữaphảnhồiđãghinhậnvàsốliệuhiểnthị.
+CácchỉsốkỹthuậtcủamôhìnhnhưF1,ngưỡngquyếtđịnhhoặcphiênbảnmôhìnhđượctách
+khỏicácchỉsốnghiệpvụ.ThôngtinnàyđượctrìnhbàyởkhuvựcđánhgiáchấtlượngNLPđể
+tránhgâynhầmlẫngiữa hiệu quả mô hình và thống kê phản hồi của khách hàng .
+10.5. Truy vết và tính nhất quán của dữ liệu phân tích
+Các số liệu trên bảng điều khiển phải có khả năng truy vết về phản hồi và kết quả NLP tương
+ứng.Hệthốngduytrìmốiliênhệgiữanộidungphảnhồigốc,điểmđánhgiá,sảnphẩmvàcác
+cặpkhíacạnh–cảmxúcđãđượcghinhận.
+Mộtkhíacạnhcóthểchứanhiềubằngchứngchitiết,nhưngtrongthốngkêchínhchỉđượctính
+mộtlầnchomỗiphảnhồi.Quytắcnàygiúptránhsailệchsốliệudokếtquảtrùnglặp.
+Thôngtinvềphiênbảnmôhìnhđượcliênkếtvớikếtquảphântíchkhicầnthiết,tạocơsởcho
+việcđốichiếuvàgiảithíchdữliệukhimôhìnhđượccậpnhậttrongtươnglai.
+11. Triển khai, kiểm thử và bàn giao
+Sau khi mô hình và các thành phần ứng dụng được tích hợp, hệ thống được đóng gói và kiểm
+thử theo nhiều mức nhằm bảo đảm khả năng vận hành ổn định trên môi trường bàn giao. Quy
+trìnhtriểnkhaitậptrungvàobayêucầuchính: tính nhất quán của môi trường chạy, khả năng
+kiểm chứng chức năng và khả năng tái lập khi chuyển sang máy khác .
+
+
+--- PAGE 28 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 27
+Hình 8. Quy trình build – chạy – kiểm tra – bàn giao.
+11.1. Môi trường triển khai và container hóa
+FastAPIđượcsửdụnglàmlớpứngdụngwebchính,trongkhiDockervàDockerComposehỗ
+trợđónggóicácthưviện,cấuhìnhvàthànhphầncầnthiếtvàomộtmôitrườngchạytươngđối
+độclậpvớimáypháttriển[7].
+Việccontainerhóagiúpgiảmsaikhácvềphiênbảnthưviệnvàmôitrườnggiữacácmáy,đồng
+thời hỗ trợ quy trình bàn giao. Tuy nhiên, Docker chỉ phục vụ triển khai ứng dụng vàkhông
+thay thế quy trình huấn luyện mô hình , vốn được thực hiện và kiểm soát riêng như đã trình
+bàyởChương7.
+MôhìnhNLP,tokenizer,cấuhìnhtiềnxửlývàcáctàinguyêncủaVnCoreNLPphảiđượccung
+cấp đúng phiên bản để bảo đảm quá trình suy luận sử dụng cùng điều kiện với giai đoạn đánh
+giá.
+11.2. Tổ chức các kịch bản vận hành
+Cáckịchbảnvậnhànhđượctáchtheotừngtráchnhiệmnhằmhạnchếviệcmộtthaotácvôtình
+ảnhhưởngđếndữliệuhoặcmôhình.
+Bảng 9. Phân tách trách nhiệm các script vận hành.
+Script/nhóm thao tác Trách nhiệm
+START.bat Khởiđộngứngdụngđãđượccấuhình.
+RUN_FRESH_SOURCE.bat Xâydựnglạiứngdụngtừmãnguồnhiệntạimàkhôngtựđộngxóa
+dữliệulưutrữ.
+PUBLISH_DOCKERHUB.bat Đóngnhãnvàcôngbốimageđãđượctạo.
+
+
+--- PAGE 29 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 28
+Script/nhóm thao tác Trách nhiệm
+Preflight+trainlauncher Thựchiệnbướckiểmtratiềnđiềukiệntrướckhibắtđầuhuấnluyện.
+PACKAGE_FULL_PROJECT.ps1Đónggóimãnguồn,cấuhìnhvàartifactcầnthiếtchoquátrìnhbàn
+giao.
+Việc phân tách này giúp thao tác khởi động, xây dựng lại, huấn luyện, công bố và đóng gói hệ
+thống được thực hiện độc lập, từ đó giảm nguy cơ thay đổi ngoài dự kiến đối với dữ liệu hoặc
+artifact.
+11.3. Chiến lược kiểm thử
+Kiểm thử được thực hiện theo nhiều mức, từ kiểm tra mã nguồn đến kiểm thử hệ thống hoàn
+chỉnh.Mộtthayđổichỉđượcxemlàđãđượcxácminhkhicóbằngchứngphùhợpvớiphạmvi
+ảnhhưởngcủathayđổiđó.
+Quytrìnhkiểmthửcóthểbaogồm kiểm tra cú pháp và mã nguồn, kiểm thử đơn vị, kiểm thử
+tích hợp, kiểm thử runtime và kiểm thử đầu cuối đối với các chức năng giao diện .Những
+bướcchưađượcthựchiệncầnđượcghinhậnrõthayvìmặcđịnhxemlàđãđạtyêucầu.
+ĐốivớimôhìnhNLP,việchuấnluyệnhoàntấtchưađủđểkhẳngđịnhmôhìnhcóthểtriểnkhai.
+Artifact sau huấn luyện cần được kiểm tra về cấu trúc, khả năng tải lại và khả năng thực hiện
+suyluậntrongmộttiếntrìnhmới.
+11.4. Kiểm thử mô-đun NLP và tích hợp
+Mô-đun NLP được kiểm tra ở cả mứcngữ nghĩa và tích hợp hệ thống . Kiểm thử ngữ nghĩa
+tập trung vào các trường hợp như phản hồi đa khía cạnh, phủ định, mixed, other và no_aspect.
+Kiểm thử tích hợp xác minh rằng kết quả của PhoBERT được truyền đúng qua dịch vụ nghiệp
+vụ,lưuvàocơsởdữliệuvàhiểnthịnhấtquántrêngiaodiện.
+MộtyêucầuquantrọnglàhệthốngphảisửdụngđúngmôhìnhTransformerđãđượccấuhình
+vàkhôngtựđộngchuyểnsangmộtphươngphápdựđoánkhácmàkhôngthôngbáo.Lớptrích
+xuất bằng chứng cũng được kiểm tra để bảo đảm chỉ hỗ trợ giải thích kết quả, không thay đổi
+khíacạnhhoặccảmxúcdoPhoBERTxácđịnh.
+Cáckếtquảchitiếtcủatừngbộkiểmthửđượclưuriêngtrongartifacthoặcbáocáothựcnghiệm.
+Các số lượng PASS/W ARN/FAIL trong báo cáo chính nên được cập nhật sau khi phiên bản
+mô hình cuối cùng được đóng băng.
+11.5. Đánh giá khả năng triển khai
+Ngoài chất lượng dự đoán, khả năng triển khai còn phụ thuộc vào thời gian phản hồi, mức sử
+dụngbộnhớvàđộổnđịnhkhitảimôhình.Môhìnhvàtokenizernênđượctảimộtlầnkhidịch
+vụkhởiđộngthayvìkhởitạolạichotừngphảnhồi.
+
+
+--- PAGE 30 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 29
+Đối với môi trường có GPU tương thích, PhoBERT có thể sử dụng CUDA để giảm thời gian
+suyluận.TrênmôitrườngchỉcóCPU,hệthốngvẫncóthểđượctriểnkhainhưngthờigianxử
+lýcóthểtăng.Việcthayđổibackendsuyluậncầnđượcthôngbáorõvàkhôngnêntựđộngthay
+thếPhoBERTbằngmộtmôhìnhcơsởkhác.
+Kiểm tra trạng thái của container cũng cần bao gồm khả năng tải thành công thành phần NLP,
+khôngchỉkiểmtraviệcdịchvụwebđãkhởiđộng.Mộtyêucầukiểmtratốithiểulàthựchiện
+ít nhất một phản hồi thực tế và xác nhận rằng kết quả được tạo bởi đúng backend NLP đã cấu
+hình.
+Nếutiếnhànhđánhgiáhiệunăng,thờigiansuyluậnnênđượcđosaugiaiđoạnkhởiđộngban
+đầuvàbáocáotrênnhiềulầnchạythayvìdựatrênmộtmẫuđơnlẻ.
+11.6. Đóng gói và bàn giao
+Góibàngiaocầnchứacácthànhphầncầnthiếtđểcóthểxâydựngvàchạylạihệthống,baogồm
+mãnguồnứngdụng,mô-đunNLP,artifactmôhình,tokenizer,cấuhình,thưviệnphụthuộc,các
+kịchbảnvậnhànhvàtàiliệuhướngdẫn.
+Nhữngdữliệucódunglượnglớnnhưngkhôngcầnthiếtchochứcnăngcốtlõi,chẳnghạntoàn
+bộkhoảnhsảnphẩm,khôngcầnđượcđónggóitrựctiếp.Thayvàođó,hệthốngchỉgiữmetadata
+vàcáctàinguyêntốithiểucầnthiếtđểtáitạogiaodiện.
+Trướckhibàngiao,cầnkiểmtrakhảnăngkhởiđộngứngdụng,tảimôhình,truycậpdữliệuvà
+thựchiệnítnhấtmộtluồngphảnhồihoànchỉnhtừnhậpnộidungđếnlưukếtquảphântích.Tài
+liệubàngiaocũngphảiphảnánhđúngphiênbảnmãnguồnvàartifactđượccungcấp.
+12. Thảo luận, hạn chế và hướng phát triển
+12.1. Kết quả đạt được
+Dự án đã xây dựng được một quy trình tương đối hoàn chỉnh cho bài toán phân tích phản hồi
+tiếng Việt theo khía cạnh, từ xây dựng hệ nhãn, chuẩn bị dữ liệu, thiết kế mô hình, huấn luyện
+vàđánhgiáđếntíchhợpvàoứngdụngthươngmạiđiệntử.
+Mộtđiểmquantrọngcủahệthốnglàsựphântáchrõtráchnhiệmgiữacácthànhphần: PhoBERT
+quyết định khía cạnh và cảm xúc, lớp trích xuất bằng chứng hỗ trợ giải thích kết quả, còn
+Rasa đảm nhiệm điều phối hội thoại .Cáchtổchứcnàygiúptránhviệccácluậtthủcôngcan
+thiệptrựctiếpvàodựđoáncốtlõicủamôhình.
+Bên cạnh mô hình NLP,hệ thống còn hỗ trợ lưu trữ phản hồi, thống kê cho người bán và triển
+khai thông qua Docker, qua đó cho thấy khả năng kết nối giữa mô hình ngôn ngữ và một ứng
+dụngthựctế.
+
+
+--- PAGE 31 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 30
+12.2. Hạn chế dữ liệu
+Tậpdữliệuhiệntạivẫnmangtính thực nghiệm,trongđómộtphầndữliệuđượctổnghợphoặc
+xâydựngbổsungtrongquátrìnhpháttriển.Dữliệuchưađượcgánnhãnđộclậpbởinhiềungười
+vàchưacóquytrìnhthẩmđịnhthốngnhấtđểhìnhthànhmộttậpchuẩncóđộtincậycao.
+Mặc dù việc bổ sung dữ liệu đã giúp giảm mất cân bằng ở các khía cạnh ít mẫu như
+customer_service và other, số lượng lớn hơn không đồng nghĩa với độ đa dạng ngữ nghĩa cao
+hơn.Cácphảnhồithựctếcóthểchứatiếnglóng,lỗichínhtả,vănbảnkhôngdấu,cấutrúcchâm
+biếm,phủđịnhphứctạphoặcngữcảnhdàimàdữliệuhiệntạichưabaophủđầyđủ.
+Dođó,kếtquảtrêntậppháttriểncầnđượcdiễngiảicùngvớigiớihạncủamiềndữliệuvàkhông
+nênđượcxemnhưbằngchứngchokhảnăngphântíchtiếngViệtnóichung.
+12.3. Hạn chế của mô hình
+MôhìnhsửdụngPhoBERT-base-v2vớiđộdàiđầuvàohữuhạnvàphụthuộcvàoquátrìnhphân
+đoạntừ.Vớiphảnhồidài,việcchiavănbảnthànhnhiềucửasổcóthểgiảmnguycơmấtthông
+tinnhưnglàmquytrìnhsuyluậnphứctạphơn.
+Cáctrườnghợpkhóvẫnchủyếuliênquanđếnphảnhồiđakhíacạnh,cấutrúctươngphản,cảm
+xúcmixedvàcáckhíacạnhcóítdữliệu.Ngoàira,điểmtincậyđầuracủamôhìnhchưađược
+xemlàxácsuấtđãhiệuchuẩn,vìvậycáctrườnghợpgầnngưỡngvẫncầnđượcxửlýthậntrọng.
+Nhữnghạnchếnàychothấyviệccảithiệnmôhìnhnênưutiên chất lượng dữ liệu, các trường
+hợp khó và quy trình đánh giá có kiểm soát,thayvìbổsungcácluậtthủcôngđểsửatrựctiếp
+kếtquảdựđoán.
+12.4. Hướng phát triển
+Hướng phát triển quan trọng nhất là xây dựng một tập dữ liệu được gán nhãn theo hướng dẫn
+thốngnhất,vớiítnhấthaingườigánnhãnđộclậpvàcóbướcxửlýbấtđồng.Điềunàygiúptạo
+cơsởđánhgiáđángtincậyhơnchomôhình.
+Bên cạnh đó, có thể tiếp tục thu thập các trường hợp mô hình dự đoán sai trong quá trình sử
+dụng, phân loại chúng theo nguyên nhân và bổ sung có kiểm soát vào tập huấn luyện. Các tập
+DevvàTestphảiđượcgiữđộclậptrongsuốtquátrìnhnày.
+Về mô hình, các nghiên cứu tiếp theo có thể xem xét hiệu chuẩn độ tin cậy, cơ chế từ chối dự
+đoán khi không đủ chắc chắn, tối ưu ngưỡng theo từng khía cạnh và so sánh với các mô hình
+tiếngViệtmớihơntrêncùngmộtquytrìnhđánhgiá.
+Ở mức hệ thống, có thể bổ sung các chức năng theo dõi phản hồi xử lý lỗi, lọc thống kê theo
+khía cạnh – cảm xúc và phân tích xu hướng theo thời gian. Tuy nhiên, các mở rộng này nên
+đượcthựchiệnsaukhichấtlượngmôhìnhvàquytrìnhđánhgiáđãđủổnđịnh.
+
+
+--- PAGE 32 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 31
+12.5. Đạo đức dữ liệu và nguyên tắc công bố kết quả
+Phảnhồithươngmạiđiệntửlàdữliệudongườidùngtạovàcóthểchứathôngtincánhânngoài
+mụctiêunghiêncứu.Nếudữliệuthựctếđượcthuthậpđểcảithiệnmôhình,cácthôngtinkhông
+cầnthiếtcầnđượcloạibỏhoặcẩndanh,đồngthờiquyềntruycậpphảiđượckiểmsoátphùhợp.
+Dữliệucũngcóthểchứathiênlệchtheongànhhàng,nhómngườidùnghoặcphongcáchđánh
+giá.Vìvậy,phạmvicủamôhìnhcầnđượcmôtảđúngvớimiềndữliệuđãsửdụng,tránhkhái
+quátkếtquảsangcácmiềntiếngViệtkháckhichưacóbằngchứngđánhgiátươngứng.
+Đốivớidữliệuđượctạohoặcràsoátbằngmôhìnhngônngữ,nguồngốcdữliệucầnđượclưu
+lạivàtrìnhbàyrõ.Cácmẫunàycóthểhỗtrợquátrìnhhuấnluyệnnhưngkhôngthaythếhoàn
+toàndữliệuchuẩndoconngườithẩmđịnhtrongtậpđánhgiácuốicùng.
+Cuốicùng,cầnphânbiệtgiữa khả năng vận hành kỹ thuật của hệ thốngvà bằng chứng khoa
+học về chất lượng mô hình . Một mô hình có thể đủ ổn định để tích hợp vào ứng dụng nhưng
+vẫncầnđượcđánhgiátrêntậpdữliệuđộclậptrướckhiđưarakếtluậncuốicùngvềkhảnăng
+tổngquáthóa.
+13. Kết luận
+BàitậplớnđãxâydựnghệthốngphântíchphảnhồitiếngViệttheokhíacạnhtrongthươngmại
+điệntử,sửdụng PhoBERT-base-v2đểxácđịnhcáccặpkhíacạnh–cảmxúcvàRasađểđiều
+phối hội thoại. Hệ thống hỗ trợ sáu khía cạnh đã quy ước, đồng thời tách rõ vai trò của điểm
+đánhgiá,no_aspectvàlớptríchxuấtbằngchứng.
+MôhìnhNLPđượctíchhợpvớiứngdụng,cơsởdữliệuvàbảngđiềukhiểnngườibán,quađó
+hình thành một quy trình tương đối hoàn chỉnh từ thu thập phản hồi đến phân tích và thống kê
+kếtquả.
+Hạnchếchínhhiệnnaynằmởchấtlượngvàđộđadạngcủadữliệu.Trongtươnglai,cầntiếp
+tụcmởrộngdữliệuđượcthẩmđịnh,bổsungcáctrườnghợpngữnghĩakhóvàđánhgiátrêntập
+kiểmthửđộclậpđểxácđịnhchínhxáchơnkhảnăngtổngquáthóacủamôhình.
+Tài liệu tham khảo
+[1] M. Pontiki và cộng sự, “SemEval-2014 Task 4: Aspect Based Sentiment Analysis”,
+Proceedings of SemEval 2014,tr.27–35,2014.
+[2]J.Devlin,M.-W.Chang,K.LeevàK.Toutanova,“BERT:Pre-trainingofDeepBidirectional
+TransformersforLanguageUnderstanding”, Proceedings of NAACL-HLT,tr.4171–4186,2019.
+DOI:10.18653/v1/N19-1423.
+[3]D.Q.NguyenvàA.T.Nguyen,“PhoBERT:Pre-trainedLanguageModelsforVietnamese”,
+Findings of EMNLP,2020.
+[4]T.Vu,D.Q.Nguyen,D.Q.Nguyen,M.DrasvàM.Johnson,“VnCoreNLP:AVietnamese
+
+
+--- PAGE 33 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 32
+NaturalLanguageProcessingToolkit”, NAACL-HLT Demonstrations,2018.
+[5] Rasa Technologies, “Rasa Documentation: Dialogue Management, Actions and Assistant
+Architecture”,tàiliệutrựctuyến,truycậptháng08/2026.
+[6]T.M.T.Nguyen,“AMultimodalProductReviewsDatasetCollectedfromLazada(2024)”,
+Hugging Face Datasets: multimodal-product-reviews-lazada,2024.
+[7] FastAPI, “FastAPI in Containers – Docker”, tài liệu chính thức về triển khai FastAPI bằng
+container,truycậptháng08/2026.
+[8] A. Vaswani và cộng sự, “Attention Is All You Need”,Advances in Neural Information
+Processing Systems,2017.
+Tài liệu và artifact nội bộ của dự án
+• PROJECT_KNOWLEDGE.md: tài liệu mô tả kiến trúc, trạng thái và các quyết định kỹ
+thuậtcủadựán.
+• AI_CHANGELOG.md:lịchsửthayđổimãnguồn,môhìnhvàquátrìnhkiểmthử.
+• Cácartifactvàbáocáothựcnghiệmcủamôhình,baogồmbaseline,cácphiênbảnPhoBERT,
+kếtquảkiểmtratrướchuấnluyện,báocáoruntimevàcácbộkiểmthửtíchhợp.
+Phụ lục A. Các ca kiểm thử ngữ nghĩa
+Phụ lục này trình bày một số trường hợp tiêu biểu dùng để kiểm tra khả năng xử lý ngữ nghĩa
+củamôhình.Mỗitrườnghợpcầncókỳvọngrõràngtheocùngmộthướngdẫngánnhãn.Nếu
+môhìnhchưađápứngmộttrườnghợp,kếtquảđượcghinhậnnhưmộthạnchếthayvìsửdụng
+luậtthủcôngđểthayđổidựđoáncốtlõi.
+Bảng A1. Bộ ca thử ngữ nghĩa tối thiểu cho demo/regression.
+ID Câu thử Kỳ vọng Nhóm
+A1 “Áođẹpnhưnggiaoquá
+chậm.”
+product_quality=positive;
+delivery=negative
+Tươngphản,đa
+khíacạnh
+A2 “Hộpkhônghềbịmóp.” packaging=positivehoặckhôngtiêucực
+theoquyướcđãchốt
+Phủđịnh
+A3 “Giárấthợplý,chấtlượng
+sảnphẩmtốt.”
+price=positive;product_quality=positive Đakhíacạnh
+A4 “Nhânviênhỗtrợnhanh
+nhưnggiaohàngtrễ.”
+customer_service=positive;
+delivery=negative
+Đakhíacạnh
+A5 “Mìnhchưacónhậnxétgì
+vềsảnphẩm.”
+no_aspect Thiếuthôngtin
+
+
+--- PAGE 34 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 33
+ID Câu thử Kỳ vọng Nhóm
+A6 “asdfqwer123.” no_aspect Nhiễu
+A7 “Đónggóicẩnthậnnhưng
+sảnphẩmbịxước.”
+packaging=positive;
+product_quality=negative
+Haikhíacạnhtrái
+cảmxúc
+A8 “Shoplúcđầutrảlờichậm
+nhưngsauhỗtrợđổihàng
+rấtnhiệttình.”
+customer_service=mixed Cảmxúchỗnhợp
+A9 “Rẻmàdùngổnápphết.” price=positive;product_quality=positive Tiếnglóng
+A10 “Giaonhanh,giáổn,hộp
+chắc,hàngđẹp.”
+Bốnkhíacạnhtươngứngmangcảmxúc
+tíchcực
+Đakhíacạnh
+A11 “Khôngbiếtnóigì,cho5
+sao.”
+no_aspect Điểmsaokhông
+quyếtđịnhNLP
+A12 “Sảnphẩmkhôngtệ,dùng
+kháổn.”
+product_quality=positive Phủđịnh
+Khiđánhgiá,nênlưukếtquảdựđoán,điểmtincậyvàngưỡngquyếtđịnhcủatừngkhíacạnh.
+Nhãn mixed chỉ được sử dụng khi cùng một khía cạnh chứa bằng chứng tích cực và tiêu cực
+đángkể.
+Phụ lục B. Hợp đồng API và trạng thái dữ liệu
+Bảng B1. Hợp đồng dữ liệu ở các điểm tích hợp chính.
+Thành phần Đầu vào chính Đầu ra hoặc trạng thái
+POST
+/api/feedback/preview
+product_id,rating,text Kếtquảphântíchtạmthời;chưaghi
+nhậnphảnhồichínhthức
+POST/api/feedback product_id,rating,text BảnghiphảnhồivàkếtquảNLP
+tươngứng
+Dịchvụgửiphảnhồi Dữliệuphảnhồihợplệ Lưunộidunggốc,thựchiệnphân
+tíchvàlưukếtquảtheokhíacạnh
+DịchvụNLP Vănbảnvàcấuhìnhruntime KếtquảtừmôhìnhTransformerđã
+đượccấuhình
+Phântíchngườibán Cácbảnghiđãlưutrongcơsởdữ
+liệu
+Thốngkêtheosáukhíacạnhmà
+khôngthựchiệnlạisuyluận
+Đánhgiámôhình Artifactvàcấuhình Thôngtinmôhìnhvàcácchỉsố
+đánhgiáđãđượclưu
+Nếuquátrìnhsuyluậnthấtbạisaukhiphảnhồichínhthứcđượcgửi,bảnghinộidunggốcvẫn
+
+
+--- PAGE 35 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 34
+được duy trì và trạng thái xử lý được cập nhật tương ứng. Việc gửi lại cần được kiểm soát để
+tránhtạocácbảnghiphântíchtrùnglặp.
+B.1. Trạng thái feedback
+13.1. pending: phản hồi gốc đã được lưu và đang chờ xử lý NLP.
+13.2. ok: kết quả NLP hợp lệ đã được lưu.
+13.3. no_aspect: không xác định được khía cạnh đủ ý nghĩa.
+13.4. failed: quá trình phân tích hoặc tích hợp gặp lỗi; phản hồi gốc vẫn được
+bảo toàn.
+B.2. Quy tắc duy nhất theo khía cạnh
+Mỗiphảnhồichỉcómộtkếtquảphântíchchínhchomộtkhíacạnh.Mộtkhíacạnhcóthểliên
+kếtvới nhiều bằng chứngchi tiết, nhưng cácbằng chứng này không làmtăng số lần khíacạnh
+đượctínhtrongthốngkê.
+Phụ lục C. Checklist chạy và bàn giao
+Bảng C1. Checklist kỹ thuật trước khi nộp/bàn giao.
+Hạng mục Yêu cầu
+Môhình Artifactđượclựachọncuốicùngtồntạivàcóđầyđủtrọngsố,tokenizer,cấu
+hìnhvàngưỡngquyếtđịnh
+RuntimeNLP DịchvụtảiđúngmôhìnhTransformerđãcấuhìnhvàkhôngchuyểnsangmô
+hìnhkhácmàkhôngthôngbáo
+VnCoreNLP Tàinguyênvàđườngdẫnđượccấuhìnhhợplệ
+Cơsởdữliệu Dữliệuđượcbảotoànkhixâydựnglạiứngdụng;thaotácđặtlạidữliệuphải
+đượcthựchiệnriêng
+Danhmụcsảnphẩm Dữliệusảnphẩm,giámôphỏng,phântrangvàảnhthaythếhoạtđộngđúng
+Luồngkháchhàng Xemsảnphẩm,nhậpphảnhồi,xemtrước,xácnhậnvàgửichínhthứchoạt
+độnghoànchỉnh
+Luồngngườibán Sáukhíacạnhđượcthốngkêtừdữliệuđãlưu
+Rasa Khiđượcsửdụng,RasagọicùngdịchvụABSAvàkhôngtriểnkhaibộphân
+loạicảmxúcsongsong
+Docker Khởiđộng,xâydựnglạivàcôngbốimageđượctáchthànhcácthaotácđộclập
+Kiểmthử Cácmứckiểmthửđãchạyđượcghinhậnrõ;bướcchưathựchiệnđượcđánh
+dấuNOT_RUN
+
+
+--- PAGE 36 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 35
+Hạng mục Yêu cầu
+Tàiliệu Tàiliệukiếntrúc,trạngtháivàlịchsửthayđổiphùhợpvớiphiênbảnđượcbàn
+giao
+Đánhgiá KhôngtrìnhbàykếtquảDevhoặckiểmthửnộibộnhưkếtquảTestđộclập
+Phụ lục D. Tóm tắt tiến trình thực nghiệm
+Phụ lục này ghi lại các giai đoạn chính trong quá trình phát triển mô hình nhằm bảo đảm khả
+năngtruyvếtgiữadữliệu,cấuhìnhvàartifact.
+Bảng D1. Dòng thời gian kỹ thuật của NLP core.
+Giai đoạn Vai trò và kết quả chính
+Baseline Thiếtlậpmốcsosánhbằngphươngphápdựatrênluậtvàmôhìnhhọcmáy
+truyềnthống
+PhoBERTphiênbản
+đầu
+KiểmchứngkhảnăngtinhchỉnhTransformerchobàitoánABSA
+Mởrộngdữliệu Bổsungdữliệuchocáckhíacạnhthiếumẫu,đặcbiệtcustomer_servicevà
+other
+Cácphiênbảncảitiến Điềuchỉnhdữliệu,cấuhìnhhoặcquytrìnhhuấnluyệndựatrênphântíchlỗi
+Kiểmtrangữnghĩa Đánhgiácáctrườnghợpđakhíacạnh,phủđịnh,tươngphảnvàcảmxúcmixed
+Kiểmthửtíchhợp XácminhluồngtừmôhìnhNLPđếnlưutrữvàgiaodiện
+Môhìnhđượclựa
+chọncuối
+Cậpnhậtsaukhiquátrìnhhuấnluyệnvàđánhgiácuốicùnghoàntất
+Giaiđoạn Vaitròvàkếtquảchính
+Mỗikếtquảthựcnghiệmcầngắnvớiphiênbảndữliệu,cấuhìnhhuấnluyệnvàartifactcụthể.
+Giá trị của một mô hình không chỉ phụ thuộc vào chỉ số F1 mà còn phụ thuộc vào tính hợp lệ
+củaquátrìnhtạorakếtquảđó.
+Phụ lục E. Hướng dẫn gán nhãn dữ liệu ABSA
+Đơn vị gán nhãn là một phản hồi hoàn chỉnh. Người gán nhãn xác định các khía cạnh có bằng
+chứng trực tiếp trong văn bản và cảm xúc tương ứng. Không suy luận nhãn từ điểm đánh giá,
+danhmụcsảnphẩmhoặccácthôngtinkhôngxuấthiệntrongnộidungphảnhồi.
+E.1. Quy tắc xác định khía cạnh
+• Chất lượng sản phẩm (product_quality): thuộc tính, công năng, độ bền, vật liệu, kích
+thướchoặclỗicủasảnphẩm.
+
+
+--- PAGE 37 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 36
+• Giao hàng (delivery): thờigian,tốcđộvàquátrìnhvậnchuyển.
+• Dịch vụ chăm sóc khách hàng (customer_service): tưvấn,hỗtrợ,phảnhồi,đổitrả,bảo
+hànhhoặctháiđộcủangườibán.
+• Đóng gói (packaging): hộp,baobì,niêmphong,chốngsốcvàkhảnăngbảovệsảnphẩm.
+• Giá cả (price): mứcgiá,đắt/rẻ,tínhhợplýcủagiáhoặcgiátrịnhậnđượcsovớichiphí.
+• Khác (other):nộidungđánhgiácóýnghĩanhưngkhôngthuộcnămkhíacạnhtrên.Không
+sửdụngothernhưnhãnmặcđịnhchonộidungkhôngrõnghĩa.
+• no_aspectđượcsửdụngkhivănbảnkhôngcungcấpđủbằngchứngđểxácđịnhmộtkhía
+cạnhcóýnghĩa.
+E.2. Quy tắc cảm xúc
+• positiveđượcsửdụngkhingườidùngthểhiệnsựhàilònghoặcđánhgiáthuậnlợi.
+• negativeđượcsửdụngkhicóphànnàn,lỗihoặcđánhgiábấtlợi.
+• neutral được sử dụng khi nội dung chủ yếu mang tính mô tả và không thể hiện thái độ rõ
+ràng.
+• mixedchỉđượcsửdụngkhi cùng một khía cạnh chứacảbằngchứngtíchcựcvàtiêucực
+đángkể.
+Đối với các cấu trúc phủ định như“không đắt” hoặc “không tệ”, nhóm cần áp dụng một quy
+tắcthốngnhấttrongtoànbộcorpusthayvìquyếtđịnhkhácnhauởtừngmẫu.
+E.3. Quy trình thẩm định
+Trongđiềukiệnphùhợp,mỗimẫunênđượcítnhấthaingườigánnhãnđộclập.Cáctrườnghợp
+bất đồng được đưa qua bước thẩm định chung và quyết định cuối cùng cần được ghi lại. Mức
+độ đồng thuận giữa người gán nhãn có thể được đo bằng Cohen’s kappa, Jaccard hoặc F1 tùy
+loạinhãnđượcđánhgiá.
+Phụ lục F. Chi tiết toán học và ngưỡng quyết định
+F.1. Biểu diễn bài toán đa nhãn
+Vớiphảnhồi x,vectornhãnkhíacạnhđượcbiểudiễnbởi:
+yA ∈ {0, 1}6
+PhoBERTsinhbiểudiễnngữnghĩa h.Nhánhpháthiệnkhíacạnhtạo:
+zA = WAh + bA
+
+
+--- PAGE 38 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 37
+và:
+pA =sigmoid(zA)
+Khíacạnhiđượcdựđoánxuấthiệnkhi:
+pi ≥ τi
+trongđó τi làngưỡngquyếtđịnhcủakhíacạnhi,đượcxácđịnhtrêntậpDev.
+F.2. Mất mát cảm xúc có mặt nạ
+Vớimỗikhíacạnh,nhánhcảmxúcsinhbốnlogittươngứngvớibốnlớpcảmxúc.Nhữngkhía
+cạnhkhôngxuấthiệntrongnhãnchuẩnđượcloạikhỏiquátrìnhtínhCross-Entropy.
+GọiMlàtậpcácvịtrícómụctiêucảmxúchợplệ:
+LS = 1
+|M |
+∑
+i∈M
+CE(zS
+i , yS
+i )
+KhiMrỗng,thànhphầnmấtmátcảmxúcđượcbỏquađểtránhgiátrịkhôngxácđịnh.
+F.3. Hàm mất mát tổng
+Hainhiệmvụđượctốiưuđồngthời:
+L = λALA + λSLS
+Trongđó LA làmấtmátpháthiệnkhíacạnhvà LS làmấtmátphânloạicảmxúc.
+F.4. Xác định ngưỡng trên Dev
+NgưỡngcủatừngkhíacạnhđượclựachọntrêntậpDevdựatrêntiêuchíđánhgiáđãxácđịnh.
+Khidữliệuhoặcmôhìnhthayđổiđángkể,cácngưỡngcầnđượcđánhgiálạithayvìmặcđịnh
+táisửdụnggiátrịcủaphiênbảntrước.
+Phụ lục G. Cách đọc chỉ số đánh giá và phân tích lỗi
+G.1. Ý nghĩa của các chỉ số
+TrongbàitoánABSAđanhãn,accuracyđơnlẻkhôngphảnánhđầyđủchấtlượngmôhình.Vì
+vậy,báocáosửdụngcácchỉsốF1ởmứckhíacạnhvàởmứccặpkhíacạnh–cảmxúc.
+Pair Macro-F1 phản ánh chất lượng trung bình trên các cặp khía cạnh – cảm xúc và được sử
+dụnglàmchỉsốtổnghợpchính.
+
+
+--- PAGE 39 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 38
+Pair Micro-F1 phảnánhhiệuquảtổng thểtrêntoànbộ dựđoánnhưngcó thểchịuảnh hưởng
+lớntừcáclớpphổbiến.
+Aspect Macro-F1chỉđánhgiákhảnăngpháthiệnkhíacạnh.
+Conditional Sentiment Macro-F1 đánh giá cảm xúc trong điều kiện khía cạnh tương ứng đã
+đượcxácđịnh.
+Exact Match yêucầutoànbộtậpdựđoáncủamộtphảnhồiphảitrùngvớinhãnchuẩn.
+G.2. Phân tích lỗi
+Cáclỗichínhcóthểđượcchiathành:
+Loại lỗi Ý nghĩa Hướng kiểm tra
+Bỏsótkhíacạnh Khíacạnhcótrongnhãnchuẩnnhưng
+khôngđượcdựđoán
+Kiểmtrangưỡng,dữliệuvàkhảnăng
+biểudiễnngữnghĩa
+Dựđoánthừakhía
+cạnh
+Môhìnhpháthiệnkhíacạnhkhôngcó
+trongnhãnchuẩn
+Kiểmtranhiễunhãnvàngưỡng
+Saicảmxúc Đúngkhíacạnhnhưngsaitrạngtháicảm
+xúc
+Kiểmtraphủđịnh,mixedvàđộphủ
+dữliệu
+Saibằngchứng Kếtquảmôhìnhđúngnhưngcụmgiải
+thíchkhôngphùhợp
+Điềuchỉnhlớptríchxuấtbằngchứng
+Saitíchhợp Kếtquảgiữamôhình,cơsởdữliệuvà
+giaodiệnkhôngnhấtquán
+Kiểmtradịchvụvàlưutrữ
+Nhầmothervà
+no_aspect
+Ranhgiớihaitrạngtháichưarõ Ràsoátguidelinevàdữliệu
+G.3. Nguyên tắc báo cáo kết quả
+Cầnphânbiệtbaloạibằngchứng: kết quả trên Dev phục vụ phát triển, các bộ kiểm thử chẩn
+đoán và tích hợp,và kết quả trên tập Test độc lập.ChỉtậpTestđượcgiữtáchbiệttrongtoàn
+bộquátrìnhpháttriểnmớiphùhợpđểđánhgiácuốicùngvềkhảnăngtổngquáthóa.
+Phụ lục H. Tính tái lập, bảo mật và quản trị thay đổi
+H.1. Tính tái lập của thực nghiệm
+Một thực nghiệm chỉ có thể được tái lập khi xác định được dữ liệu, quy trình tiền xử lý, mô
+hìnhnền,seed,siêuthamsố,ngưỡngquyếtđịnhvàphiênbảnmãnguồntươngứng.Vìvậy,các
+artifactcầnlưuđủcấuhìnhvàthôngtinnguồngốcđểkếtquảcóthểđượcđốichiếuvềsau.
+
+
+--- PAGE 40 ---
+Rasachatbotvàmodulephântíchfeedbackngườidùng 39
+H.2. Quản trị thay đổi
+Mỗithayđổiquantrọngđốivớidữliệu,môhìnhhoặcmãnguồncầnghinhậnmụctiêu,thành
+phầnbịảnhhưởng,kiểmthửđãthựchiệnvàvấnđềcòntồntại.Quytắcnàyđặcbiệtcầnthiết
+khinhiềuthànhviênhoặccôngcụhỗtrợlậptrìnhcùngthamgiapháttriển,nhằmhạnchếviệc
+mộtthayđổimớivôtìnhkhôiphụclỗihoặcphávỡquyếtđịnhkiếntrúctrướcđó.
+H.3. Bảo mật và quyền truy cập
+Hệthốngphântáchquyềntruycậpgiữakháchhàngvàngườibán.Cácchứcnăngthốngkêdành
+cho người bán cần được bảo vệ ở tầng ứng dụng. Phản hồi của người dùng cũng có thể chứa
+thôngtincánhân,dođódữliệudùngchonghiêncứuhoặcchiasẻcầnđượctốithiểuhóavàẩn
+danhkhicầnthiết.
+H.4. An toàn dữ liệu Docker
+Image, build cache và volume cơ sở dữ liệu là các thành phần độc lập. Việc xây dựng lại ứng
+dụng không nên mặc định xóa dữ liệu đã lưu. Nếu cần đặt lại catalog hoặc phản hồi, thao tác
+nàyphảiđượcthựchiệncóchủđíchvànêncócơchếsaolưuhoặctáitạodữliệu.
+H.5. Tiêu chí hoàn thành
+Bảng H1. Tiêu chí kiểm chứng theo loại công việc.
+Công việc Tiêu chí hoàn thành
+Sửalỗimãnguồn Mãnguồnđượccậpnhậtvàkiểmthửhồiquyliênquanđạtyêucầu
+Sửalỗiruntime Kiểmthửmãnguồnvàkiểmchứngtrênmôitrườngchạythựctếđạtyêucầu
+Huấnluyệnmôhình Quátrìnhhuấnluyệnhoàntất,artifactđượclưuvàcóthểtảilạiđểsuyluận
+TíchhợpNLP Kếtquảđượctruyềnđúngquadịchvụ,lưutrữvàgiaodiện
+Bàngiao Góibàngiaochạyđượctrênmôitrườngmụctiêuvàtàiliệuphùhợpvớiphiên
+bảnmãnguồn

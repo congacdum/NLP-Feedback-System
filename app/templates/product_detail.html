@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ product.name }}{% endblock %}
 {% block content %}
-<main data-chat-product-id="{{ product.id }}" class="bg-slate-50 min-h-screen pb-24">
+<main data-feedback-product-id="{{ product.id }}" data-feedback-product-name="{{ product.name }}" class="bg-slate-50 min-h-screen pb-24">
   
   <!-- Hero / Product Section -->
   <section class="relative pt-12 pb-16 overflow-hidden">
@@ -81,7 +81,7 @@
             <div class="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out z-0"></div>
             
             <div class="relative z-10 flex flex-col sm:flex-row items-center gap-6">
-              <button class="w-full sm:w-auto relative overflow-hidden rounded-2xl bg-indigo-600 px-8 py-4 text-white font-bold text-lg shadow-lg shadow-indigo-200 hover:shadow-indigo-400/50 transition-all duration-300 hover:-translate-y-1 focus:ring-4 focus:ring-indigo-200 outline-none flex items-center justify-center gap-3 shrink-0" type="button" data-open-product-chat>
+              <button class="w-full sm:w-auto relative overflow-hidden rounded-2xl bg-indigo-600 px-8 py-4 text-white font-bold text-lg shadow-lg shadow-indigo-200 hover:shadow-indigo-400/50 transition-all duration-300 hover:-translate-y-1 focus:ring-4 focus:ring-indigo-200 outline-none flex items-center justify-center gap-3 shrink-0" type="button" data-open-feedback-form>
                 <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="relative z-10"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                 <span class="relative z-10">Chia sẻ trải nghiệm</span>
@@ -90,7 +90,7 @@
               <div class="flex-1 text-sm text-slate-500 font-medium leading-relaxed">
                 <div class="flex items-start gap-2">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-500 shrink-0 mt-0.5"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
-                  <p>Nhắn tin trực tiếp với <span class="text-indigo-600 font-bold">trợ lý AI</span> để gửi phản hồi tự do cho sản phẩm này. Phân tích NLP theo thời gian thực.</p>
+                  <p>Chọn số sao và chia sẻ trải nghiệm. Hệ thống sẽ lưu feedback rồi phân tích NLP một lần cho sản phẩm này.</p>
                 </div>
               </div>
             </div>
@@ -142,7 +142,7 @@
           </div>
           <h3 class="text-xl font-bold text-slate-800 mb-2">Chưa có đánh giá nào</h3>
           <p class="text-slate-500 font-medium max-w-md mx-auto">Rating của sản phẩm bắt đầu từ 0 và chỉ thay đổi dựa trên feedback thực tế của người dùng. Hãy là người đầu tiên chia sẻ trải nghiệm!</p>
-          <button class="mt-8 px-6 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors" type="button" data-open-product-chat>Viết đánh giá ngay</button>
+          <button class="mt-8 px-6 py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl hover:bg-indigo-100 transition-colors" type="button" data-open-feedback-form>Viết đánh giá ngay</button>
       </div>
       {% else %}
       

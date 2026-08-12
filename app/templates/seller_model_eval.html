@@ -3,38 +3,92 @@
 {% block header %}
 <div class="eyebrow"><span class="eyebrow-dot"></span> Model Lab</div>
 <h1>Đánh giá mô hình</h1>
-<p class="muted">Trang này chỉ đọc evaluation artifact đã đóng băng; không chạy mô hình khi mở dashboard.</p>
+<p class="muted">Trang chỉ đọc evaluation artifact đã lưu; mở dashboard không chạy model.</p>
 {% endblock %}
 {% block content %}
-{% if no_final %}
+{% if no_evaluation %}
 <div class="eval-warning animate-fade-in-up">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:middle;margin-right:8px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <b>Chưa có mô hình final được đánh giá.</b><br>Huấn luyện, đóng băng checkpoint và chạy held-out Test theo protocol trước khi dùng kết quả khoa học.
+    <b>Chưa tìm thấy evaluation artifact.</b><br>
+    Chạy <code>python scripts/build_dev_evaluation.py model_artifacts/&lt;artifact&gt;</code> để hiển thị Dev validation, hoặc chạy held-out protocol đã đóng băng khi đủ điều kiện khoa học.
 </div>
 {% else %}
+{% set m = evaluation_metrics %}
+{% if evaluation_kind == 'dev' %}
+<div class="eval-warning animate-fade-in-up">
+    <b>DEV VALIDATION / EXPERIMENTAL.</b> Checkpoint và threshold đều được chọn trên Dev. Các chỉ số dưới đây hữu ích để theo dõi training, nhưng không được trình bày là kết quả held-out Test hay scientific final.
+</div>
+{% elif experimental %}
+<div class="eval-warning animate-fade-in-up"><b>EXPERIMENTAL / NON-SCIENTIFIC.</b> Kết quả này không phải scientific final trên human-verified gold.</div>
+{% endif %}
+
 <div class="panel animate-fade-in-up" style="margin-bottom:18px">
-    <b>Artifact:</b> {{ artifact_name }}
-    {% if experimental %}<br><span class="eval-warning" style="margin-top:8px;display:inline-block"><b>EXPERIMENTAL / NON-SCIENTIFIC</b> — chỉ để kiểm tra runtime; không phải kết quả trên gold human-verified.</span>{% endif %}
+    <b>Artifact:</b> {{ artifact_name }}<br>
+    <b>Backbone:</b> {{ metrics.get('backbone', 'unknown') }} · <b>Seed:</b> {{ metrics.get('seed', 'unknown') }} · <b>Best epoch:</b> {{ metrics.get('best_epoch', 'n/a') }}<br>
+    <span class="muted">{{ metrics.get('warning', '') }}</span>
 </div>
-{% set t=metrics.get('test',{}) %}
+
 <div class="metric-grid animate-fade-in-up" style="animation-delay:.1s">
-    <div class="metric"><small>Strict-union Pair Macro-F1</small><strong>{{ '%.3f'|format(t.get('pair_macro_f1_strict_union',0)) }}</strong></div>
-    <div class="metric"><small>Aspect Macro-F1</small><strong>{{ '%.3f'|format(t.get('aspect_macro_f1',0)) }}</strong></div>
-    <div class="metric"><small>Sentiment Macro-F1</small><strong>{{ '%.3f'|format(t.get('sentiment_macro_f1',0)) }}</strong></div>
-    <div class="metric"><small>Exact Match</small><strong>{{ '%.3f'|format(t.get('exact_match',0)) }}</strong></div>
+    <div class="metric"><small>Strict-union Pair Macro-F1</small><strong>{{ '%.3f'|format(m.get('pair_macro_f1_strict_union', 0)) }}</strong></div>
+    <div class="metric"><small>Aspect Macro-F1</small><strong>{{ '%.3f'|format(m.get('aspect_macro_f1', 0)) }}</strong></div>
+    <div class="metric"><small>Sentiment Macro-F1</small><strong>{{ '%.3f'|format(m.get('sentiment_macro_f1', 0)) }}</strong></div>
+    <div class="metric"><small>Exact Match</small><strong>{{ '%.3f'|format(m.get('exact_match', 0)) }}</strong></div>
 </div>
-<div class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.2s">
-    <b>Primary metric:</b> Strict-union Pair Macro-F1 · <b>Dev threshold tuning:</b> có · <b>Test dùng để chọn model:</b> không.
-    {% if experimental %} Kết quả này là experimental, không phải scientific final.{% endif %}
+
+<div class="panel-grid animate-fade-in-up" style="animation-delay:.2s">
+    <section class="panel">
+        <h2>Chất lượng nhận diện khía cạnh</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Khía cạnh</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th><th>Threshold</th></tr></thead>
+                <tbody>
+                {% for aspect, row in m.get('per_aspect', {}).items() %}
+                    <tr><td>{{ aspect_vi.get(aspect, aspect) }}</td><td>{{ '%.3f'|format(row.get('precision', 0)) }}</td><td>{{ '%.3f'|format(row.get('recall', 0)) }}</td><td><b>{{ '%.3f'|format(row.get('f1', 0)) }}</b></td><td>{{ row.get('support', 0) }}</td><td>{{ '%.2f'|format(metrics.get('thresholds', {}).get(aspect, 0)) }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="panel">
+        <h2>Chất lượng sentiment</h2>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Sentiment</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+                <tbody>
+                {% for sentiment, row in m.get('per_sentiment', {}).items() %}
+                    <tr><td>{{ sentiment_vi.get(sentiment, sentiment) }}</td><td>{{ '%.3f'|format(row.get('precision', 0)) }}</td><td>{{ '%.3f'|format(row.get('recall', 0)) }}</td><td><b>{{ '%.3f'|format(row.get('f1', 0)) }}</b></td><td>{{ row.get('support', 0) }}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 </div>
+
 <div class="chart-grid animate-fade-in-up" style="margin-top:18px;animation-delay:.3s">
     {% for p in plots %}
-    <article class="chart-card"><h3>{{ p.title }}</h3><img src="/model-artifacts/{{ artifact_rel }}/evaluation/plots/{{ p.file }}" alt="{{ p.title }}"></article>
+    <article class="chart-card"><h3>{{ p.title }}</h3><img src="/model-artifacts/{{ artifact_rel }}/{{ evaluation_dir_name }}/plots/{{ p.file }}" alt="{{ p.title }}"></article>
     {% endfor %}
 </div>
+
 <details class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.4s">
-    <summary><b>Chi tiết kỹ thuật</b></summary>
-    <pre style="white-space:pre-wrap;font-size:12px;overflow:auto;font-family:var(--font-mono,'monospace')">{{ metrics|tojson(indent=2) }}</pre>
+    <summary><b>Bảng F1 theo cặp khía cạnh × sentiment</b></summary>
+    <div class="table-wrap" style="margin-top:16px">
+        <table>
+            <thead><tr><th>Cặp nhãn</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr></thead>
+            <tbody>
+            {% for pair, row in m.get('per_pair', {}).items() %}
+                {% set parts = pair.split('#') %}
+                <tr><td>{{ aspect_vi.get(parts[0], parts[0]) }} · {{ sentiment_vi.get(parts[1], parts[1]) }}</td><td>{{ '%.3f'|format(row.get('precision', 0)) }}</td><td>{{ '%.3f'|format(row.get('recall', 0)) }}</td><td><b>{{ '%.3f'|format(row.get('f1', 0)) }}</b></td><td>{{ row.get('support', 0) }}</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>
+
+<details class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.45s">
+    <summary><b>Protocol và cấu hình train</b></summary>
+    <pre style="white-space:pre-wrap;font-size:12px;overflow:auto;font-family:var(--font-mono,'monospace')">{{ metrics.get('protocol', {})|tojson(indent=2) }}
+
+{{ metrics.get('training', {})|tojson(indent=2) }}</pre>
 </details>
 {% endif %}
 {% endblock %}

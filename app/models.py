@@ -47,6 +47,7 @@ class Feedback(Base):
     text_raw: Mapped[str] = mapped_column(Text)
     analysis_status: Mapped[str] = mapped_column(String(30), default="pending", index=True)
     model_version: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    issue_details_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     user: Mapped[User] = relationship(back_populates="feedbacks")
     product: Mapped[Product] = relationship(back_populates="feedbacks")

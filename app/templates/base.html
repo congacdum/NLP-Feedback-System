@@ -68,21 +68,47 @@
         </div>
     </footer>
     
-    <button class="chat-fab fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 hover:scale-110 hover:shadow-xl transition-all z-50 group" data-chat-fab aria-label="Mở chatbot">
+    <button class="chat-fab fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-200 flex items-center justify-center hover:bg-indigo-700 hover:scale-110 hover:shadow-xl transition-all z-50 group" data-feedback-fab aria-label="Mở biểu mẫu đánh giá">
         <svg class="group-hover:animate-bounce" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
     </button>
     
-    <section class="chat-panel fixed bottom-24 right-6 w-[360px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col z-50 transform origin-bottom-right transition-all duration-300 opacity-0 scale-95 pointer-events-none" data-chat-panel>
+    <section class="chat-panel fixed bottom-24 right-6 w-[360px] max-w-[calc(100vw-2rem)] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex flex-col z-50 transform origin-bottom-right transition-all duration-300 opacity-0 scale-95 pointer-events-none" data-feedback-panel>
         <div class="chat-head bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 font-medium flex items-center shadow-sm">
             <svg class="mr-3 text-indigo-100" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-            Trợ lý phản hồi
+            Gửi đánh giá
         </div>
-        <div class="chat-body flex-1 h-[400px] overflow-y-auto p-4 bg-gray-50/50" data-chat-body></div>
-        <form class="chat-input p-3 border-t border-gray-100 bg-white flex items-center gap-2" data-chat-form>
-            <input class="flex-1 bg-gray-100 border-transparent focus:bg-white focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 rounded-full px-4 py-2.5 text-sm transition-all" placeholder="Nhập phản hồi tự do..." autocomplete="off">
-            <button class="w-10 h-10 rounded-full bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 transition-colors shrink-0">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            </button>
+        <div class="feedback-assistant-content p-4 bg-gray-50/50" data-feedback-scroll-area>
+            <p class="text-sm text-slate-600 leading-6" data-feedback-context>Mở trang chi tiết sản phẩm để gửi đánh giá.</p>
+            <div class="hidden mt-4 space-y-3" data-feedback-conversation aria-live="polite">
+                <div class="flex justify-end" data-feedback-customer-turn>
+                    <div class="max-w-[85%] rounded-2xl rounded-br-md bg-indigo-600 px-3 py-2.5 text-sm text-white shadow-sm">
+                        <p class="mb-1 text-xs font-semibold text-indigo-100" data-feedback-rating></p>
+                        <p class="leading-6 whitespace-pre-wrap" data-feedback-customer-message></p>
+                    </div>
+                </div>
+                <div class="flex justify-start" data-feedback-assistant-turn>
+                    <div class="max-w-[90%] rounded-2xl rounded-bl-md border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900 shadow-sm">
+                        <p class="mb-1 text-xs font-semibold text-emerald-700" data-feedback-response-label>Trợ lý phản hồi</p>
+                        <p class="leading-6" data-feedback-status role="status"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <form class="p-4 border-t border-gray-100 bg-white space-y-4" data-feedback-form>
+            <fieldset>
+                <legend class="text-sm font-semibold text-slate-800 mb-2">Đánh giá của bạn</legend>
+                <div class="flex gap-2" data-rating-options>
+                    {% for rating in range(1, 6) %}
+                    <label class="cursor-pointer">
+                        <input class="peer sr-only" type="radio" name="rating" value="{{ rating }}" required>
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-sm font-semibold text-slate-500 transition-colors peer-checked:border-amber-400 peer-checked:bg-amber-400 peer-checked:text-white hover:border-amber-400">{{ rating }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+            <label class="block text-sm font-semibold text-slate-800" for="feedback-text">Nội dung feedback</label>
+            <textarea id="feedback-text" name="text" required maxlength="5000" rows="5" class="w-full resize-y rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100" placeholder="Chia sẻ về chất lượng, giao hàng, đóng gói, giá hoặc hỗ trợ của shop..."></textarea>
+            <button class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-400" type="submit" data-feedback-submit>Gửi đánh giá</button>
         </form>
     </section>
     

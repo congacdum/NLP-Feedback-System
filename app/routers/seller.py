@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.config import ROOT, settings
 from app.dependencies import current_user, get_db
 from app.models import Feedback
-from app.services.analytics_service import aspect_matrix, dashboard_summary, product_analytics
+from app.services.analytics_service import aspect_matrix, dashboard_summary, issue_summary, product_analytics
 from nlp.schema import ASPECT_VI, SENTIMENT_VI
 
 router=APIRouter(prefix="/seller")
@@ -33,7 +33,7 @@ def seller_login_page(request:Request,error:str="",db:Session=Depends(get_db)):
 def seller_dashboard(request:Request,db:Session=Depends(get_db)):
     if not seller_guard(request,db): return RedirectResponse("/seller/login",status_code=303)
     recent=db.scalars(select(Feedback).options(selectinload(Feedback.product),selectinload(Feedback.analyses)).order_by(Feedback.created_at.desc()).limit(8)).all()
-    return request.app.state.templates.TemplateResponse(request=request, name="seller_dashboard.html", context=seller_ctx(request,db,summary=dashboard_summary(db),matrix=aspect_matrix(db),recent=recent,products=product_analytics(db,6)))
+    return request.app.state.templates.TemplateResponse(request=request, name="seller_dashboard.html", context=seller_ctx(request,db,summary=dashboard_summary(db),matrix=aspect_matrix(db),recent=recent,products=product_analytics(db,6),issues=issue_summary(db)))
 
 @router.get("/feedback")
 def seller_feedback(request:Request,db:Session=Depends(get_db)):
@@ -46,7 +46,11 @@ def seller_feedback_detail(feedback_id:int,request:Request,db:Session=Depends(ge
     if not seller_guard(request,db): return RedirectResponse("/seller/login",status_code=303)
     row=db.scalar(select(Feedback).where(Feedback.id==feedback_id).options(selectinload(Feedback.product),selectinload(Feedback.user),selectinload(Feedback.analyses)))
     if not row:return RedirectResponse("/seller/feedback",status_code=303)
-    return request.app.state.templates.TemplateResponse(request=request, name="seller_feedback_detail.html", context=seller_ctx(request,db,feedback=row))
+    try:
+        enrichment = json.loads(row.issue_details_json or "[]")
+    except (TypeError, ValueError):
+        enrichment = []
+    return request.app.state.templates.TemplateResponse(request=request, name="seller_feedback_detail.html", context=seller_ctx(request,db,feedback=row,enrichment=enrichment))
 
 @router.get("/aspects")
 def seller_aspects(request:Request,db:Session=Depends(get_db)):
@@ -62,50 +66,72 @@ def seller_products(request:Request,db:Session=Depends(get_db)):
 def model_evaluation(request:Request,db:Session=Depends(get_db)):
     if not seller_guard(request,db): return RedirectResponse("/seller/login",status_code=303)
 
-    # A configured Transformer artifact may be scientific or explicitly
-    # experimental.  Demo baseline fixtures are never a scorecard substitute.
-    artifact_root = None
+    candidates = []
     if settings.evaluation_artifact:
         candidate = Path(settings.evaluation_artifact)
         if not candidate.is_absolute(): candidate = ROOT / candidate
-        if candidate.exists(): artifact_root = candidate
-    if artifact_root is None and settings.transformer_artifact:
+        if candidate.exists(): candidates.append(candidate)
+    if settings.transformer_artifact:
         candidate = Path(settings.transformer_artifact)
         if not candidate.is_absolute(): candidate = ROOT / candidate
-        if (candidate / "evaluation").exists(): artifact_root = candidate
-    if artifact_root is None:
+        if candidate.exists(): candidates.append(candidate)
+
+    artifact_root = None
+    eval_dir = None
+    evaluation_kind = None
+    for candidate in candidates:
+        if (candidate / "evaluation" / "metrics.json").exists():
+            artifact_root, eval_dir, evaluation_kind = candidate, candidate / "evaluation", "final"
+            break
+    if eval_dir is None:
+        for candidate in candidates:
+            if (candidate / "evaluation_dev" / "metrics.json").exists():
+                artifact_root, eval_dir, evaluation_kind = candidate, candidate / "evaluation_dev", "dev"
+                break
+    if artifact_root is None or eval_dir is None:
         return request.app.state.templates.TemplateResponse(
             request=request, name="seller_model_eval.html",
-            context=seller_ctx(request, db, metrics={}, plots=[], artifact_rel="", artifact_name=None, no_final=True),
+            context=seller_ctx(request, db, metrics={}, plots=[], artifact_rel="", artifact_name=None, no_evaluation=True),
         )
 
-    eval_dir = artifact_root / "evaluation"
     metrics={}
     try: metrics=json.loads((eval_dir/"metrics.json").read_text(encoding="utf-8"))
     except Exception: pass
     if metrics.get("artifact_kind") == "demo_baseline":
         return request.app.state.templates.TemplateResponse(
             request=request, name="seller_model_eval.html",
-            context=seller_ctx(request, db, metrics={}, plots=[], artifact_rel="", artifact_name=None, no_final=True),
+            context=seller_ctx(request, db, metrics={}, plots=[], artifact_rel="", artifact_name=None, no_evaluation=True),
         )
     if not metrics:
         return request.app.state.templates.TemplateResponse(
             request=request, name="seller_model_eval.html",
-            context=seller_ctx(request, db, metrics={}, plots=[], artifact_rel="", artifact_name=None, no_final=True),
+            context=seller_ctx(request, db, metrics={}, plots=[], artifact_rel="", artifact_name=None, no_evaluation=True),
         )
-    plot_names=[
-        ("dataset_distribution.png","Phân bố dữ liệu"),
-        ("aspect_sentiment_heatmap.png","Khía cạnh × cảm xúc"),
-        ("train_dev_loss.png","Train / Dev Loss"),
-        ("dev_pair_f1.png","Dev Pair Macro-F1"),
-        ("aspect_f1.png","F1 theo khía cạnh"),
-        ("sentiment_confusion.png","Ma trận nhầm lẫn sentiment"),
-        ("threshold_f1.png","Threshold trên Dev"),
-        ("pr_curves_dev.png","Precision–Recall trên Dev"),
-        ("model_comparison.png","So sánh mô hình"),
-        ("challenge_performance.png","Semantic Challenge"),
-        ("learning_curve.png","Learning Curve"),
-    ]
+    plot_names = (
+        [
+            ("train_dev_loss.png", "Train / Dev loss"),
+            ("dev_pair_f1.png", "Strict-union Pair Macro-F1 theo epoch"),
+            ("aspect_f1.png", "F1 theo khía cạnh"),
+            ("sentiment_f1.png", "F1 theo sentiment"),
+            ("aspect_support.png", "Support theo khía cạnh"),
+            ("aspect_sentiment_f1.png", "F1 khía cạnh × sentiment"),
+            ("sentiment_confusion.png", "Ma trận nhầm lẫn sentiment"),
+            ("threshold_f1.png", "Threshold tối ưu trên Dev"),
+        ]
+        if evaluation_kind == "dev" else [
+            ("dataset_distribution.png","Phân bố dữ liệu"),
+            ("aspect_sentiment_heatmap.png","Khía cạnh × cảm xúc"),
+            ("train_dev_loss.png","Train / Dev Loss"),
+            ("dev_pair_f1.png","Dev Pair Macro-F1"),
+            ("aspect_f1.png","F1 theo khía cạnh"),
+            ("sentiment_confusion.png","Ma trận nhầm lẫn sentiment"),
+            ("threshold_f1.png","Threshold trên Dev"),
+            ("pr_curves_dev.png","Precision–Recall trên Dev"),
+            ("model_comparison.png","So sánh mô hình"),
+            ("challenge_performance.png","Semantic Challenge"),
+            ("learning_curve.png","Learning Curve"),
+        ]
+    )
     plots=[{"file":name,"title":title} for name,title in plot_names if (eval_dir/"plots"/name).exists()]
     try:
         artifact_rel = artifact_root.resolve().relative_to((ROOT/"model_artifacts").resolve()).as_posix()
@@ -113,8 +139,13 @@ def model_evaluation(request:Request,db:Session=Depends(get_db)):
         artifact_rel = "baseline_absa_v0"
     return request.app.state.templates.TemplateResponse(
         request=request,
-        name="seller_model_eval.html",
-        context=seller_ctx(request,db,metrics=metrics,plots=plots,artifact_rel=artifact_rel,artifact_name=artifact_root.name,no_final=False,experimental=metrics.get("scientific_final") is not True),
+        name="seller_model_eval.html", context=seller_ctx(
+            request, db, metrics=metrics, plots=plots, artifact_rel=artifact_rel,
+            artifact_name=artifact_root.name, evaluation_dir_name=eval_dir.name,
+            no_evaluation=False, evaluation_kind=evaluation_kind,
+            evaluation_metrics=metrics.get("dev", {}) if evaluation_kind == "dev" else metrics.get("test", {}),
+            experimental=metrics.get("scientific_final") is not True,
+        ),
     )
 
 @router.get("/settings")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import json
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -43,3 +44,36 @@ def product_analytics(session: Session, limit: int = 20) -> list[dict]:
         neg = int(session.scalar(select(func.count(FeedbackAnalysis.id)).join(Feedback).where(Feedback.product_id==pid, FeedbackAnalysis.sentiment=="negative")) or 0)
         out.append({"id":pid,"name":name,"feedback_count":int(count or 0),"average_rating":float(avg or 0),"negative_mentions":neg})
     return out
+
+
+def issue_summary(session: Session, limit: int = 6) -> list[dict]:
+    """Aggregate deterministic issue enrichment already stored with feedback."""
+    counts: dict[tuple[str, str], int] = defaultdict(int)
+    rows = session.scalars(
+        select(Feedback.issue_details_json).where(Feedback.issue_details_json.is_not(None))
+    ).all()
+    for raw_details in rows:
+        try:
+            details = json.loads(raw_details or "[]")
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(details, list):
+            continue
+        for detail in details:
+            if not isinstance(detail, dict):
+                continue
+            issue = detail.get("issue")
+            aspect = detail.get("aspect")
+            sentiment = detail.get("sentiment")
+            if isinstance(issue, str) and isinstance(aspect, str) and sentiment in {"negative", "mixed"}:
+                counts[(issue, aspect)] += 1
+
+    return [
+        {
+            "issue": issue,
+            "aspect": aspect,
+            "aspect_vi": ASPECT_VI.get(aspect, aspect),
+            "count": count,
+        }
+        for (issue, aspect), count in sorted(counts.items(), key=lambda item: (-item[1], item[0][0]))[:limit]
+    ]

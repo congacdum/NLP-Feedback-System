@@ -8,9 +8,20 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
 from sklearn.metrics import precision_recall_curve
 
 from nlp.schema import ASPECTS, SENTIMENTS, ASPECT_VI, SENTIMENT_VI
+
+
+ASPECT_SENTIMENT_CMAP = LinearSegmentedColormap.from_list(
+    "aspect_sentiment_soft_blue",
+    ["#f8fbff", "#dbeafe", "#93c5fd", "#3b82f6", "#1e3a8a"],
+)
+CONFUSION_CMAP = LinearSegmentedColormap.from_list(
+    "sentiment_confusion_teal",
+    ["#f7fcf9", "#d1fae5", "#6ee7b7", "#14b8a6", "#134e4a"],
+)
 
 
 def _save(fig, path: Path) -> None:
@@ -18,6 +29,17 @@ def _save(fig, path: Path) -> None:
     fig.tight_layout()
     fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
+
+
+def _cell_text_color(value: float, max_value: float) -> str:
+    return "white" if max_value and value >= max_value * 0.55 else "#111827"
+
+
+def _style_matrix_axes(ax, rows: int, cols: int) -> None:
+    ax.set_xticks(np.arange(-0.5, cols, 1), minor=True)
+    ax.set_yticks(np.arange(-0.5, rows, 1), minor=True)
+    ax.grid(which="minor", color="white", linewidth=1.4)
+    ax.tick_params(which="minor", bottom=False, left=False)
 
 
 def plot_dataset_distribution(records: Sequence[Mapping], path: Path) -> None:
@@ -36,14 +58,26 @@ def plot_aspect_sentiment_heatmap(records: Sequence[Mapping], path: Path) -> Non
         for ann in r.get("annotations", []):
             matrix[ASPECTS.index(ann["aspect"]), SENTIMENTS.index(ann["sentiment"])] += 1
     fig, ax = plt.subplots(figsize=(8, 5))
-    im = ax.imshow(matrix, aspect="auto")
+    im = ax.imshow(matrix, aspect="auto", cmap=ASPECT_SENTIMENT_CMAP, vmin=0, interpolation="nearest")
     ax.set_xticks(range(len(SENTIMENTS)), [SENTIMENT_VI[s] for s in SENTIMENTS])
     ax.set_yticks(range(len(ASPECTS)), [ASPECT_VI[a] for a in ASPECTS])
+    max_value = float(matrix.max()) if matrix.size else 0.0
     for i in range(len(ASPECTS)):
         for j in range(len(SENTIMENTS)):
-            ax.text(j, i, str(matrix[i, j]), ha="center", va="center")
+            value = int(matrix[i, j])
+            ax.text(
+                j,
+                i,
+                str(value),
+                ha="center",
+                va="center",
+                color=_cell_text_color(value, max_value),
+                fontsize=9,
+                fontweight="600",
+            )
+    _style_matrix_axes(ax, len(ASPECTS), len(SENTIMENTS))
     ax.set_title("Khía cạnh × cảm xúc")
-    fig.colorbar(im, ax=ax, fraction=0.03)
+    fig.colorbar(im, ax=ax, fraction=0.03, label="Count")
     _save(fig, path)
 
 
@@ -71,17 +105,29 @@ def plot_aspect_f1(metrics: Mapping, path: Path) -> None:
 def plot_sentiment_confusion(metrics: Mapping, path: Path) -> None:
     matrix = np.array(metrics.get("confusion_matrix", np.zeros((4,4))))
     fig, ax = plt.subplots(figsize=(5.5, 5))
-    im = ax.imshow(matrix)
+    im = ax.imshow(matrix, cmap=CONFUSION_CMAP, vmin=0, interpolation="nearest")
     labels = [SENTIMENT_VI[s] for s in SENTIMENTS]
     ax.set_xticks(range(4), labels, rotation=30)
     ax.set_yticks(range(4), labels)
     ax.set_xlabel("Dự đoán")
     ax.set_ylabel("Nhãn thật")
     ax.set_title("Ma trận nhầm lẫn sentiment (conditional)")
+    max_value = float(matrix.max()) if matrix.size else 0.0
     for i in range(4):
         for j in range(4):
-            ax.text(j, i, str(int(matrix[i, j])), ha="center", va="center")
-    fig.colorbar(im, ax=ax, fraction=0.04)
+            value = int(matrix[i, j])
+            ax.text(
+                j,
+                i,
+                str(value),
+                ha="center",
+                va="center",
+                color=_cell_text_color(value, max_value),
+                fontsize=10,
+                fontweight="600",
+            )
+    _style_matrix_axes(ax, 4, 4)
+    fig.colorbar(im, ax=ax, fraction=0.04, label="Count")
     _save(fig, path)
 
 

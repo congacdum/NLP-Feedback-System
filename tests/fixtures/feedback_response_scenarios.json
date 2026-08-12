@@ -1,0 +1,52 @@
+[
+  {
+    "id": "quality_positive",
+    "rating": 5,
+    "text": "Sản phẩm dùng rất tốt, chất lượng vượt mong đợi."
+  },
+  {
+    "id": "product_defect",
+    "rating": 1,
+    "text": "Máy không lên nguồn, sản phẩm bị lỗi ngay khi nhận."
+  },
+  {
+    "id": "late_delivery",
+    "rating": 2,
+    "text": "Giao hàng quá chậm, mất bảy ngày mới nhận được."
+  },
+  {
+    "id": "customer_service_no_response",
+    "rating": 1,
+    "text": "Tôi nhắn shop nhiều lần nhưng không nhận được phản hồi hỗ trợ."
+  },
+  {
+    "id": "damaged_package",
+    "rating": 2,
+    "text": "Hộp hàng bị móp và rách khi giao đến."
+  },
+  {
+    "id": "voucher_problem",
+    "rating": 2,
+    "text": "Không dùng được voucher dù đơn hàng đủ điều kiện."
+  },
+  {
+    "id": "quality_mixed",
+    "rating": 3,
+    "text": "Máy dùng ổn nhưng phần hoàn thiện chưa đẹp."
+  },
+  {
+    "id": "quality_positive_delivery_negative",
+    "rating": 4,
+    "text": "Sản phẩm rất tốt nhưng giao hàng hơi lâu."
+  },
+  {
+    "id": "three_negative_aspects",
+    "rating": 1,
+    "text": "Máy bị lỗi, hộp bị móp và giao hàng quá chậm."
+  },
+  {
+    "id": "six_aspect_stress_case",
+    "rating": 1,
+    "text": "Sản phẩm lỗi, giao hàng chậm, nhân viên không trả lời, hộp rách, giá quá cao và trải nghiệm mua hàng rất tệ."
+  }
+]

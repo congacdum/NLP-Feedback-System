@@ -70,145 +70,135 @@ if (navToggle && primaryNav) {
   }));
 }
 
-/* -- Chat Widget -- */
-const fab = document.querySelector('[data-chat-fab]'),
-  panel = document.querySelector('[data-chat-panel]'),
-  form = document.querySelector('[data-chat-form]'),
-  body = document.querySelector('[data-chat-body]');
-const productRoot = document.querySelector('[data-chat-product-id]');
-const productId = productRoot ? Number(productRoot.dataset.chatProductId) : null;
-const chatSender = (() => {
-  const key = 'nlp-feedback-chat-sender';
-  let value = localStorage.getItem(key);
-  if (!value) {
-    value = 'web-' + (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36));
-    localStorage.setItem(key, value)
+/* -- Inline Feedback Assistant -- */
+const feedbackFab = document.querySelector('[data-feedback-fab]');
+const feedbackPanel = document.querySelector('[data-feedback-panel]');
+const feedbackForm = document.querySelector('[data-feedback-form]');
+const feedbackContext = document.querySelector('[data-feedback-context]');
+const feedbackScrollArea = document.querySelector('[data-feedback-scroll-area]');
+const feedbackStatus = document.querySelector('[data-feedback-status]');
+const feedbackConversation = document.querySelector('[data-feedback-conversation]');
+const feedbackCustomerTurn = document.querySelector('[data-feedback-customer-turn]');
+const feedbackCustomerMessage = document.querySelector('[data-feedback-customer-message]');
+const feedbackRating = document.querySelector('[data-feedback-rating]');
+const feedbackAssistantTurn = document.querySelector('[data-feedback-assistant-turn]');
+const feedbackResponseLabel = document.querySelector('[data-feedback-response-label]');
+const feedbackSubmit = document.querySelector('[data-feedback-submit]');
+const feedbackProductRoot = document.querySelector('[data-feedback-product-id]');
+const feedbackProductId = feedbackProductRoot ? Number(feedbackProductRoot.dataset.feedbackProductId) : null;
+const feedbackProductName = feedbackProductRoot?.dataset.feedbackProductName || '';
+
+function showFeedbackStatus(message, kind = 'info') {
+  if (!feedbackStatus || !feedbackConversation) return;
+  feedbackConversation.classList.remove('hidden');
+  if (feedbackAssistantTurn) feedbackAssistantTurn.classList.remove('hidden');
+  const bubble = feedbackAssistantTurn?.firstElementChild;
+  if (bubble) {
+    bubble.className = `max-w-[90%] rounded-2xl rounded-bl-md border px-3 py-2.5 text-sm shadow-sm ${
+      kind === 'success' ? 'border-emerald-100 bg-emerald-50 text-emerald-900' :
+      kind === 'error' ? 'border-rose-100 bg-rose-50 text-rose-900' :
+      'border-indigo-100 bg-indigo-50 text-indigo-900'
+    }`;
   }
-  return value
-})();
-
-let activeProductId = null;
-let contextCard = null;
-
-function bubble(text, me = false) {
-  if (!body) return;
-  const element = document.createElement('div');
-  element.className = 'bubble' + (me ? ' me' : '');
-  element.textContent = text;
-  body.appendChild(element);
-  body.scrollTop = body.scrollHeight
-}
-
-function showTyping() {
-  if (!body) return null;
-  const el = document.createElement('div');
-  el.className = 'bubble typing-indicator';
-  el.innerHTML = '<span></span><span></span><span></span>';
-  body.appendChild(el);
-  body.scrollTop = body.scrollHeight;
-  return el;
-}
-
-function priceLabel(price) {
-  return Number(price) > 0 ? new Intl.NumberFormat('vi-VN').format(Number(price)) + ' ₫' : 'Chưa có dữ liệu giá'
-}
-
-function renderProductContext(product) {
-  if (!panel || !product) return;
-  if (!contextCard) {
-    contextCard = document.createElement('section');
-    contextCard.className = 'chat-product-context';
-    body?.before(contextCard)
+  if (feedbackResponseLabel) {
+    feedbackResponseLabel.className = `mb-1 text-xs font-semibold ${
+      kind === 'success' ? 'text-emerald-700' : kind === 'error' ? 'text-rose-700' : 'text-indigo-700'
+    }`;
+    feedbackResponseLabel.textContent = kind === 'success' ? 'Trợ lý phản hồi' : kind === 'error' ? 'Không thể gửi đánh giá' : 'Trợ lý đang phản hồi';
   }
-  contextCard.replaceChildren();
-  const label = document.createElement('div');
-  label.className = 'chat-product-context-label';
-  label.textContent = 'Sản phẩm đang trao đổi';
-  const row = document.createElement('div');
-  row.className = 'chat-product-context-row';
-  const image = document.createElement('img');
-  image.src = product.image_url || fallback;
-  image.alt = product.product_name || 'Sản phẩm';
-  image.onerror = () => { image.onerror = null; image.src = fallback };
-  const details = document.createElement('div');
-  const name = document.createElement('strong');
-  name.textContent = product.product_name || 'Sản phẩm';
-  const price = document.createElement('span');
-  price.textContent = priceLabel(product.price);
-  details.append(name, price);
-  row.append(image, details);
-  contextCard.append(label, row);
+  feedbackStatus.textContent = message;
+  requestAnimationFrame(() => {
+    if (feedbackScrollArea) feedbackScrollArea.scrollTop = feedbackScrollArea.scrollHeight;
+  });
 }
 
-async function startProductChat() {
-  if (!productId || !panel) return false;
-  if (activeProductId === productId) {
-    panel.classList.add('open');
-    return true
+function renderCustomerFeedback(rating, message) {
+  if (!feedbackConversation || !feedbackCustomerTurn || !feedbackCustomerMessage || !feedbackRating) return;
+  feedbackConversation.classList.remove('hidden');
+  feedbackCustomerTurn.classList.remove('hidden');
+  feedbackRating.textContent = `Đánh giá ${rating}/5`;
+  feedbackCustomerMessage.textContent = message;
+}
+
+function clearFeedbackConversation() {
+  if (feedbackConversation) feedbackConversation.classList.add('hidden');
+  if (feedbackCustomerTurn) feedbackCustomerTurn.classList.add('hidden');
+  if (feedbackAssistantTurn) feedbackAssistantTurn.classList.add('hidden');
+  if (feedbackCustomerMessage) feedbackCustomerMessage.textContent = '';
+  if (feedbackRating) feedbackRating.textContent = '';
+  if (feedbackStatus) feedbackStatus.textContent = '';
+  if (feedbackResponseLabel) feedbackResponseLabel.textContent = '';
+}
+
+function openFeedbackForm() {
+  if (!feedbackPanel) return;
+  feedbackPanel.classList.add('open');
+  clearFeedbackConversation();
+  if (!feedbackProductId) {
+    if (feedbackForm) feedbackForm.classList.add('hidden');
+    if (feedbackContext) feedbackContext.textContent = 'Mở trang chi tiết sản phẩm để gửi đánh giá.';
+    return;
   }
-  try {
-    const response = await fetch('/api/chat/start', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender: chatSender, product_id: productId })
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || 'Không thể bắt đầu trao đổi');
-
-    activeProductId = productId;
-    renderProductContext(data.product);
-    panel.classList.add('open');
-
-    const productName = data.product?.product_name || 'sản phẩm';
-    const welcomeText = `Chào bạn! Bạn cần hỗ trợ hoặc có phản hồi gì về "${productName}" không?`;
-    bubble(welcomeText);
-    return true;
-  } catch (_) {
-    panel.classList.add('open');
-    bubble('Chưa thể kết nối lúc này. Bạn thử lại giúp mình nhé.');
-    return false
+  if (feedbackForm) feedbackForm.classList.remove('hidden');
+  if (feedbackContext) {
+    feedbackContext.textContent = `Bạn đang đánh giá: ${feedbackProductName || 'sản phẩm này'}. Hãy chọn số sao và chia sẻ trải nghiệm của bạn.`;
   }
 }
 
-if (fab && panel) {
-  fab.onclick = async () => {
-    const opening = !panel.classList.contains('open');
-    panel.classList.toggle('open');
-    if (opening && productId && !activeProductId) await startProductChat()
-  }
+if (feedbackFab && feedbackPanel) {
+  feedbackFab.addEventListener('click', () => {
+    if (feedbackPanel.classList.contains('open')) {
+      feedbackPanel.classList.remove('open');
+    } else {
+      openFeedbackForm();
+    }
+  });
 }
 
-document.querySelectorAll('[data-open-product-chat]').forEach(button =>
-  button.addEventListener('click', startProductChat)
+document.querySelectorAll('[data-open-feedback-form]').forEach(button =>
+  button.addEventListener('click', openFeedbackForm)
 );
 
-if (form) {
-  form.addEventListener('submit', async event => {
+if (feedbackForm) {
+  feedbackForm.addEventListener('submit', async event => {
     event.preventDefault();
-    const input = form.querySelector('input');
-    const text = input.value.trim();
-    if (!text) return;
-    if (productId && !(await startProductChat())) return;
+    if (!feedbackProductId) {
+      showFeedbackStatus('Hãy mở trang chi tiết sản phẩm trước khi gửi đánh giá.', 'error');
+      return;
+    }
 
-    bubble(text, true);
-    input.value = '';
+    const values = new FormData(feedbackForm);
+    const rating = Number(values.get('rating'));
+    const text = String(values.get('text') || '').trim();
+    if (!rating || !text) return;
 
-    const typingEl = showTyping();
+    feedbackSubmit.disabled = true;
+    feedbackSubmit.textContent = 'Đang lưu và phân tích...';
+    renderCustomerFeedback(rating, text);
+    showFeedbackStatus('Đang ghi nhận feedback của bạn...');
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, sender: chatSender, product_id: productId })
+        body: JSON.stringify({ product_id: feedbackProductId, rating, text }),
       });
       const data = await response.json();
-      if (typingEl) typingEl.remove();
-      bubble(data.text || 'Cảm ơn phản hồi của bạn!')
-    } catch (_) {
-      if (typingEl) typingEl.remove();
-      bubble('Không thể kết nối chatbot lúc này.')
+      if (!response.ok) {
+        const detail = typeof data.detail === 'string' ? data.detail : '';
+        throw new Error(data.message || detail || 'Không thể gửi đánh giá lúc này.');
+      }
+
+      showFeedbackStatus(data.assistant_message || 'Cảm ơn bạn đã chia sẻ. Phản hồi của bạn đã được ghi nhận.', 'success');
+      feedbackForm.reset();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể gửi đánh giá lúc này.';
+      showFeedbackStatus(message === 'Login required' ? 'Bạn cần đăng nhập bằng tài khoản khách hàng để gửi đánh giá.' : message, 'error');
+    } finally {
+      feedbackSubmit.disabled = false;
+      feedbackSubmit.textContent = 'Gửi đánh giá';
     }
-  })
+  });
 }
 
 /* -- Seller Nav Active State -- */

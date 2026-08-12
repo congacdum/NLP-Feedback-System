@@ -550,7 +550,7 @@ label { display:block; font-size:13px; font-weight:600; margin:14px 0 7px; color
     position:fixed;
     right:24px; bottom:92px;
     width:min(380px, calc(100vw - 32px));
-    height:520px;
+    height:min(520px, calc(100vh - 112px));
     background:var(--card);
     border:1px solid rgba(255,255,255,.6);
     border-radius:var(--radius-lg);
@@ -560,6 +560,12 @@ label { display:block; font-size:13px; font-weight:600; margin:14px 0 7px; color
     flex-direction:column;
     overflow:hidden;
 }
+.feedback-assistant-content {
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+}
+.chat-panel [data-feedback-form] { flex:0 0 auto; }
 .chat-panel.open {
     display:flex;
     opacity:1;

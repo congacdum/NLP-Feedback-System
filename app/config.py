@@ -27,6 +27,7 @@ class Settings:
     transformer_device: str = os.getenv("TRANSFORMER_DEVICE", "auto").strip().casefold()
     evaluation_artifact: str = os.getenv("EVALUATION_ARTIFACT", "")
     vncorenlp_dir: str = os.getenv("VNCORENLP_DIR", "")
+    issue_extraction_enabled: bool = env_flag("ISSUE_EXTRACTION_ENABLED", True)
     rasa_url: str = os.getenv("RASA_URL", "http://rasa:5005")
     product_hf_base: str = os.getenv(
         "PRODUCT_HF_BASE",

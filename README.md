@@ -232,6 +232,14 @@ The primary selection metric is Dev strict-union Pair Macro-F1 over aspect#senti
 
 Model selection and threshold tuning use Train/Dev only. Final held-out Test is reserved for a separately authorized scientific protocol after data, architecture, and selection policy are frozen.
 
+To build the Seller Dev Validation dashboard from a frozen artifact without running inference or reading Test:
+
+~~~powershell
+python scripts/build_dev_evaluation.py model_artifacts/experimental_phobert_absa_v5_hard_cases_final
+~~~
+
+This creates `evaluation_dev/` with metric tables and plots for training history, Dev Pair Macro-F1, aspect and sentiment F1, support, conditional sentiment confusion, aspect-sentiment pair F1, and Dev threshold curves. These results must remain labelled as Dev validation / experimental, not held-out Test results.
+
 ## Project Structure
 
 ~~~
@@ -260,4 +268,3 @@ Read these before modifying the project:
 > The system has a verified experimental PhoBERT V2 runtime and a separate V5 data-improvement experiment in preparation. V5 has not yet been preflighted, trained, deployed, or evaluated on held-out Test data. Recent augmentation is AI-assisted experimental data, not a human-verified scientific-gold corpus.
 
 No paid LLM or API is required for the application, model inference, or training pipeline.
-

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 import logging
+import time
 from sqlalchemy.orm import Session
 
 from app.models import Feedback, FeedbackAnalysis, Product, User
 from app.services.nlp_service import get_analyzer
+from app.services.response_builder import build_feedback_response
 from nlp.schema import validate_runtime_result
 
 logger = logging.getLogger(__name__)
@@ -25,7 +28,8 @@ def create_feedback(session: Session, *, user_id: int, product_id: int, rating: 
         raise ValueError("Feedback không được để trống")
     if session.get(User, user_id) is None:
         raise ValueError("Người dùng không tồn tại")
-    if session.get(Product, product_id) is None:
+    product = session.get(Product, product_id)
+    if product is None:
         raise ValueError("Sản phẩm không tồn tại")
 
     feedback = Feedback(
@@ -42,10 +46,20 @@ def create_feedback(session: Session, *, user_id: int, product_id: int, rating: 
     logger.info("Raw feedback persisted feedback_id=%s product_id=%s status=pending", feedback_id, product_id)
 
     try:
+        started = time.perf_counter()
         result = validate_runtime_result(get_analyzer().analyze(feedback.text_raw))
+        nlp_ms = round((time.perf_counter() - started) * 1000, 2)
+        postprocess_started = time.perf_counter()
+        response = build_feedback_response(
+            feedback.text_raw,
+            result["aspects"],
+            product_context={"product_id": product.id, "category": product.category},
+        )
+        postprocess_ms = round((time.perf_counter() - postprocess_started) * 1000, 2)
         feedback.model_version = str(result.get("model_version") or "unknown")
         feedback.analysis_status = str(result.get("status") or "failed")
-        for item in result.get("aspects", []):
+        feedback.issue_details_json = json.dumps(response["analysis"], ensure_ascii=False)
+        for item in result["aspects"]:
             session.add(FeedbackAnalysis(
                 feedback_id=feedback.id,
                 aspect=item["aspect"],
@@ -55,12 +69,17 @@ def create_feedback(session: Session, *, user_id: int, product_id: int, rating: 
             ))
         session.commit()
         session.refresh(feedback)
+        # Response data is request-scoped; only structured enrichment is stored.
+        feedback.assistant_message = response["assistant_message"]
+        feedback.response_analysis = response["analysis"]
         logger.info(
-            "Feedback analysis persisted feedback_id=%s product_id=%s status=%s aspects=%s",
+            "feedback_submit feedback_id=%s product_id=%s aspect_count=%s nlp_ms=%s postprocess_ms=%s status=%s",
             feedback.id,
             product_id,
+            len(result["aspects"]),
+            nlp_ms,
+            postprocess_ms,
             feedback.analysis_status,
-            [item["aspect"] for item in result.get("aspects", [])],
         )
         return feedback
     except Exception as exc:

@@ -45,6 +45,17 @@
         <p class="muted">Chưa có feedback.</p>
         {% endfor %}
     </section>
+    <section class="panel animate-fade-in-up" style="animation-delay:.25s">
+        <h2>Van de noi bat</h2>
+        {% for item in issues %}
+        <div class="attention-item">
+            <b>{{ item.issue }}</b>
+            <div class="muted">{{ item.aspect_vi }} · <span class="sent-negative">{{ item.count }} feedback</span></div>
+        </div>
+        {% else %}
+        <p class="muted">Chua co van de tieu cuc duoc ghi nhan.</p>
+        {% endfor %}
+    </section>
 </div>
 <section class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.3s">
     <h2>Feedback gần đây</h2>

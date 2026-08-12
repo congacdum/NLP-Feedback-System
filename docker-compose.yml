@@ -14,6 +14,7 @@ services:
       TRANSFORMER_ARTIFACT: ${TRANSFORMER_ARTIFACT:-}
       EVALUATION_ARTIFACT: ${EVALUATION_ARTIFACT:-}
       VNCORENLP_DIR: ${VNCORENLP_DIR:-}
+      ISSUE_EXTRACTION_ENABLED: ${ISSUE_EXTRACTION_ENABLED:-true}
       PRODUCT_HF_BASE: ${PRODUCT_HF_BASE:-https://huggingface.co/datasets/trucmtnguyen/multimodal-product-reviews-lazada/resolve/main/}
       RASA_URL: http://rasa:5005
     volumes:
