@@ -1,155 +1,314 @@
-# NLP Feedback System
+# Hệ thống phân tích phản hồi người dùng trong thương mại điện tử
 
-Vietnamese Aspect-Based Sentiment Analysis (ABSA) for e-commerce feedback.
+> **Đề tài:** Tìm hiểu Rasa Chatbot và ứng dụng trong việc xây dựng mô-đun phân tích feedback người dùng  
+> **Học phần:** Xử lý ngôn ngữ tự nhiên  
+> **Năm:** 2026
 
-The project is a FastAPI, Jinja2, and SQLAlchemy application. Customers submit feedback for a product; the system identifies every relevant business aspect and its sentiment, then stores the analysis for seller analytics. It does not reduce a review to one overall star-like sentiment.
+## Thành viên nhóm
 
-## Current Status
+| Họ và tên | Mã sinh viên |
+|---|---:|
+| Trần Quang Thái | 24022451 |
+| Nguyễn Văn Trung | 24022475 |
+| Đàm Quang Tiến | 24022463 |
+| Vũ Hải Anh | 24022260 |
 
-| Item | Current state |
-|---|---|
-| Application architecture | FastAPI + Jinja2 + SQLAlchemy |
-| Canonical taxonomy | 6 aspects and 4 sentiments, frozen |
-| Verified local Transformer artifact | experimental_phobert_absa_v2_repaired |
-| V2 scientific status | Experimental only; not scientific-final |
-| V5 data track | Prepared locally; not yet preflighted or trained |
-| V5 Train / Dev | 18,038 / 2,205 rows |
-| Held-out Test / Challenge in V3-V5 work | Not read |
-| Default .env.example backend | demo |
+---
 
-Important distinction: V2 is the locally verified experimental Transformer runtime. V3 and V4 are Kaggle experiment observations. V5 is the next prepared experiment, not a trained or deployed model.
+## 1. Giới thiệu
 
-## What the NLP Produces
+Dự án xây dựng hệ thống **phân tích cảm xúc theo khía cạnh (Aspect-Based Sentiment Analysis - ABSA)** cho phản hồi thương mại điện tử tiếng Việt.
 
-One feedback can contain several aspects with different sentiments.
+Khác với phân loại cảm xúc toàn câu, hệ thống xác định **từng khía cạnh được đề cập** và **cảm xúc tương ứng của từng khía cạnh**. Ví dụ:
 
-~~~
-Input
+```text
+Phản hồi:
 "Sản phẩm đẹp, giá ổn nhưng giao hàng hơi lâu."
 
-Output meaning
+Kết quả:
 product_quality -> positive
 price           -> positive
 delivery        -> negative
-~~~
+```
 
-| Aspect ID | Vietnamese meaning |
+Runtime hiện tại sử dụng **PhoBERT V5** làm nguồn quyết định chính cho aspect và sentiment. **Rasa** được giữ như một thành phần hội thoại tùy chọn, không thay thế bộ phân tích ABSA của PhoBERT.
+
+---
+
+## 2. Chức năng chính
+
+### Khách hàng
+
+- Xem danh sách và chi tiết sản phẩm.
+- Tìm kiếm, lọc, sắp xếp và phân trang.
+- Xem phản hồi đã có của sản phẩm.
+- Chọn điểm đánh giá và gửi feedback tiếng Việt.
+- Nhận phản hồi tự động sau khi hệ thống phân tích nội dung.
+
+### Mô-đun NLP
+
+- Phát hiện nhiều aspect trong cùng một feedback.
+- Phân loại sentiment riêng cho từng aspect.
+- Hỗ trợ `positive`, `neutral`, `negative`, `mixed`.
+- Hỗ trợ `no_aspect` khi nội dung không đủ bằng chứng.
+- Xử lý feedback dài bằng `sliding windows`.
+- Dùng threshold riêng cho từng aspect.
+
+### Người bán
+
+- Thống kê phản hồi theo aspect và sentiment.
+- Sử dụng kết quả `FeedbackAnalysis` đã lưu, không chạy lại PhoBERT khi mở dashboard.
+- Khai thác evidence bổ sung để giải thích nguyên nhân phản hồi.
+
+---
+
+## 3. Công nghệ sử dụng
+
+| Thành phần | Công nghệ |
 |---|---|
-| product_quality | Chất lượng sản phẩm |
-| delivery | Giao hàng |
-| customer_service | Dịch vụ chăm sóc khách hàng |
-| packaging | Đóng gói |
-| price | Giá cả |
-| other | Nội dung có ý nghĩa nhưng không thuộc năm aspect đầu |
+| Backend | FastAPI |
+| Giao diện | Jinja2 |
+| ORM | SQLAlchemy |
+| Cơ sở dữ liệu | SQLite |
+| Mô hình NLP | `vinai/phobert-base-v2` |
+| Tiền xử lý tiếng Việt | VnCoreNLP |
+| Chatbot | Rasa, sử dụng tùy chọn |
+| Container hóa | Docker / Docker Compose |
 
-Canonical sentiments are positive, neutral, negative, and mixed.
+Ứng dụng, mô hình suy luận và pipeline huấn luyện chính **không yêu cầu LLM trả phí hoặc API bên ngoài**.
 
-The other aspect is not noise. A message with no usable e-commerce aspect receives no_aspect; it is not stored as a seventh aspect.
+---
 
-## End-to-End Flow
+## 4. Kiến trúc và luồng xử lý
 
-~~~
-Customer product page
-    -> submit raw feedback and optional rating
-    -> persist raw feedback with status=pending
-    -> PhoBERT ABSA inference
-    -> validate canonical result schema
-    -> optional issue-evidence enrichment
-    -> persist one FeedbackAnalysis row per selected aspect
-    -> customer acknowledgement and seller analytics
-~~~
+```text
+Khách hàng / Người bán
+         |
+         v
+      FastAPI
+         |
+         v
+  Feedback Service
+     /       \
+    v         v
+PhoBERT V5   SQLite
+    |
+    v
+Schema Validation
+    |
+    v
+Evidence + Response Builder
+    |
+    +----> Phản hồi cho khách hàng
+    |
+    +----> FeedbackAnalysis ----> Seller Analytics
+```
 
-Raw feedback is committed before inference. If the model fails, the feedback is retained and marked failed. The application does not silently substitute a rule model for a configured Transformer. Seller pages read persisted analysis and do not run inference again while browsing.
+Khi người dùng gửi feedback chính thức:
 
-The issue-extraction module can explain an already selected aspect, for example delivery -> giao hàng chậm. It cannot add an aspect, change sentiment, or create duplicate core analysis rows.
+```text
+1. Kiểm tra product_id, rating và nội dung
+2. Lưu feedback gốc với status=pending
+3. Gọi PhoBERT V5 để phân tích ABSA
+4. Kiểm tra schema kết quả
+5. Tạo evidence và câu phản hồi tiếng Việt
+6. Lưu FeedbackAnalysis theo từng aspect
+7. Cập nhật status=ok hoặc no_aspect
+8. Trả kết quả cho khách hàng
+```
 
-Rasa resources are retained for optional conversation development. The supported feedback workflow does not depend on Rasa, and PhoBERT remains the ABSA authority.
+Feedback gốc được lưu **trước khi suy luận**. Nếu NLP hoặc tích hợp gặp lỗi, nội dung vẫn được bảo toàn và trạng thái chuyển thành `failed`.
 
-## Model and Inference Design
+Các trạng thái chính:
 
-The Transformer implementation uses PhoBERT as a shared encoder with two heads:
+- `pending`: đã lưu feedback, đang chờ xử lý NLP.
+- `ok`: phân tích thành công và có aspect hợp lệ.
+- `no_aspect`: không có aspect nào vượt threshold.
+- `failed`: xảy ra lỗi trong quá trình phân tích hoặc tích hợp.
 
-~~~
+---
+
+## 5. Taxonomy của bài toán
+
+### Sáu aspect
+
+| Aspect | Ý nghĩa |
+|---|---|
+| `product_quality` | Chất lượng, công năng, độ bền, vật liệu, kích thước hoặc lỗi sản phẩm |
+| `delivery` | Tốc độ, thời gian, lịch và quá trình giao hàng |
+| `customer_service` | Tư vấn, hỗ trợ, đổi trả, bảo hành và thái độ bên bán |
+| `packaging` | Hộp, bao bì, niêm phong, chống sốc và khả năng bảo vệ sản phẩm |
+| `price` | Mức giá, đắt/rẻ, tính hợp lý và ưu đãi trực tiếp |
+| `other` | Nội dung đánh giá có ý nghĩa nhưng không thuộc năm nhóm trên |
+
+### Bốn sentiment
+
+- `positive`: tích cực.
+- `neutral`: trung tính.
+- `negative`: tiêu cực.
+- `mixed`: cùng một aspect có cả tín hiệu tích cực và tiêu cực đáng kể.
+
+### `other` và `no_aspect`
+
+`other` là một **aspect hợp lệ**. `no_aspect` chỉ là **trạng thái xử lý**, không phải aspect thứ bảy.
+
+```text
+"Áo đẹp nhưng giao chậm."
+-> product_quality=positive, delivery=negative
+
+"Không biết nói gì, cho 5 sao."
+-> no_aspect
+```
+
+Điểm đánh giá 1-5 sao chỉ được lưu dưới dạng **metadata** và không dùng để ghi đè sentiment do PhoBERT dự đoán.
+
+---
+
+## 6. Mô hình PhoBERT V5
+
+Artifact runtime hiện tại:
+
+```text
+model_artifacts/experimental_phobert_absa_v5_hard_cases_final/
+```
+
+Backbone:
+
+```text
+vinai/phobert-base-v2
+```
+
+Mô hình sử dụng một encoder PhoBERT dùng chung và hai head:
+
+```text
 PhoBERT encoder
-    -> 6 sigmoid outputs for multilabel aspect detection
-    -> 6 x 4 outputs for sentiment per aspect
-~~~
+    |
+    +--> Aspect head: 6 sigmoid outputs
+    |
+    +--> Sentiment head: 6 x 4 logits
+```
 
-- Aspect loss: BCE-based multilabel loss.
-- Sentiment loss: masked cross entropy, computed only for valid aspect targets.
-- Long feedback: overlapping token windows prevent silent tail truncation.
-- PhoBERT preprocessing: normalize Vietnamese text -> VnCoreNLP word segmentation -> PhoBERT tokenizer.
-- Each aspect receives its own threshold tuned strictly on Dev. An aspect is selected only when aspect_score >= threshold.
+- Aspect detection là bài toán đa nhãn, sử dụng BCE-based loss.
+- Sentiment sử dụng Cross-Entropy có mask tại các aspect hợp lệ.
+- Mỗi aspect có threshold riêng được chọn trên Dev.
+- Không dùng top-1 fallback khi tất cả aspect đều dưới threshold.
+- Feedback dài được xử lý bằng các cửa sổ token chồng lấn.
 
-The debug utility prints the complete score, threshold, margin, selection, and sentiment table:
+### Tiền xử lý
 
-~~~powershell
-$env:VNCORENLP_DIR = 'C:\vncorenlp'
-python scripts/debug_transformer_feedback.py "Sản phẩm đẹp, giá ổn nhưng giao hàng hơi lâu" --artifact model_artifacts/experimental_phobert_absa_v2_repaired --vncorenlp-dir $env:VNCORENLP_DIR --device cpu
-~~~
+```text
+Feedback gốc
+ -> Unicode NFC + làm sạch HTML/khoảng trắng
+ -> mask URL / email / số điện thoại
+ -> giữ dấu, phủ định, emoji và dấu câu
+ -> VnCoreNLP word segmentation
+ -> PhoBERT tokenizer
+ -> PhoBERT V5
+```
 
-Scores are model confidence-like values, not calibrated real-world probabilities. The threshold is a Dev-tuned selection policy, not a parameter learned directly by the model.
+Train và inference sử dụng cùng logic phân đoạn từ để hạn chế sai khác phân phối đầu vào.
 
-## V2, V3, V4, and V5
+---
 
-### V2 verified experimental runtime
+## 7. Dữ liệu và cấu hình huấn luyện
 
-The local artifact is:
+Track V5 sử dụng:
 
-~~~
-model_artifacts/experimental_phobert_absa_v2_repaired/
-~~~
+```text
+Train: nlp/data/experimental_v2/train.jsonl
+Dev:   nlp/data/experimental_v2/dev.jsonl
+Test:  nlp/data/experimental/test.jsonl
+```
 
-It contains the local model state, tokenizer, encoder configuration, training manifest, Dev metrics, and thresholds. Its best recorded Dev strict-union Pair Macro-F1 is 0.8975828151903416.
+| Tập dữ liệu | Feedback | Annotation | Vai trò |
+|---|---:|---:|---|
+| Train | 18,038 | 25,191 | Cập nhật trọng số |
+| Dev | 2,205 | 2,936 | Chọn checkpoint và threshold |
+| Natural Test | 2,337 | 2,919 | Held-out experimental evaluation |
+| Balanced V2 | 1,800 | 2,160 | Diagnostic cân bằng |
 
-V2 is not scientific-final because the data is experimental and the held-out final protocol has not been completed.
+Natural Test có phân bố aspect:
 
-### V3 and V4 experimental observations
+| Aspect | Support |
+|---|---:|
+| `product_quality` | 1,672 |
+| `delivery` | 544 |
+| `price` | 390 |
+| `packaging` | 297 |
+| `customer_service` | 10 |
+| `other` | 6 |
 
-V3 addressed generic product-quality and other coverage. Its Kaggle console record reported best Dev strict-union Pair Macro-F1 0.8698432855, product-quality Dev F1 0.9748316200, and other Dev F1 0.9911504425.
+Hai aspect `customer_service` và `other` có support rất thấp trên Natural Test nên các chỉ số riêng của chúng cần được diễn giải thận trọng.
 
-V4 added customer-service and multi-aspect other coverage. It improved direct customer-service diagnostics, while other remained the most threshold-sensitive aspect in long, complex feedback.
+Cấu hình V5:
 
-V3 and V4 artifacts are not stored locally. They are Kaggle experiment observations, not local deployment claims or held-out scientific results.
+| Tham số | Giá trị |
+|---|---|
+| Epoch | 5 |
+| Batch size | 8 |
+| Max length | 256 |
+| Learning rate | `2e-5` |
+| Weight decay | `0.01` |
+| Warmup ratio | `0.10` |
+| Optimizer | AdamW |
+| Seed | 42 |
+| Gradient clipping | 1.0 |
+| Selection metric | Dev strict-union Pair Macro-F1 |
 
-### V5 prepared data revision
+Threshold đóng băng:
 
-V5 expands the working experimental Train split while leaving Dev unchanged.
+| Aspect | Threshold |
+|---|---:|
+| `product_quality` | 0.36 |
+| `delivery` | 0.80 |
+| `customer_service` | 0.50 |
+| `packaging` | 0.54 |
+| `price` | 0.32 |
+| `other` | 0.58 |
 
-~~~
-Train: 18,038 rows
-SHA-256: e08b8e2206de4b49c0a92dcc5cecd59acef3065659673f1356bb6d9818e0102e
+---
 
-Dev: 2,205 rows
-SHA-256: 1162f2d47b03b42de8d68a3530e31df6b99d3867523db984e9c9e2630f7f1754
-~~~
+## 8. Kết quả đánh giá
 
-The V5 track includes:
+| Protocol | Strict-union Pair Macro-F1 | Pair Micro-F1 | Aspect Macro-F1 | Sentiment Macro-F1 | Exact Match |
+|---|---:|---:|---:|---:|---:|
+| Dev | 0.8809 | 0.9121 | 0.9779 | 0.8338 | 0.8562 |
+| Natural Test | **0.5609** | **0.8843** | **0.9507** | **0.7745** | **0.8228** |
+| Balanced V2 | 0.7961 | 0.8305 | 0.9114 | 0.8840 | 0.7761 |
 
-- 171 added product-quality annotations and 7 corrected product-quality sentiment labels on existing rows.
-- 500 other augmentation rows.
-- 400 customer-service and 400 multi-aspect other augmentation rows.
-- 500 accepted hard-case rows. The remaining 100 rows of the 600-row hard-case source were rejected for meta/instructional wording.
+Dev được dùng để lựa chọn checkpoint và threshold nên không được xem là đánh giá độc lập cuối cùng.
 
-All recent augmentation remains AI-assisted, experimental, non-human-verified, and non-scientific-final. V5 must receive a fresh preflight PASS before training; an earlier V4 preflight cannot authorize it.
+Natural Test là tập held-out trong track thực nghiệm hiện tại. Balanced V2 là tập diagnostic cân bằng, được tạo với hỗ trợ của mô hình ngôn ngữ và chưa phải human-gold Test.
 
-## Run the Application
+### So sánh baseline trên Natural Test
 
-### Local V2 Transformer runtime
+| Mô hình | Pair Macro-F1 | Strict-union Pair Macro-F1 | Pair Micro-F1 | Exact Match |
+|---|---:|---:|---:|---:|
+| Rule | 0.2001 | 0.1917 | 0.4125 | 0.2383 |
+| LinearSVM | 0.4299 | 0.4120 | 0.8137 | 0.7317 |
+| TF-IDF LR | 0.5124 | 0.4911 | 0.8012 | 0.7231 |
+| **PhoBERT V5** | **0.5853** | **0.5609** | **0.8843** | **0.8228** |
 
-Requirements:
+PhoBERT V5 có point estimate cao nhất trong bảng. Tuy nhiên, toàn bộ track hiện tại vẫn được báo cáo ở phạm vi **experimental**, chưa phải `scientific-final`.
 
-- Python environment with requirements-transformer-runtime.txt installed.
-- Java available through JAVA_HOME or the portable JRE under .tools/jre21.
-- VnCoreNLP directory at C:\vncorenlp containing VnCoreNLP-1.2.jar and models/wordsegmenter.
+---
 
-PowerShell example:
+## 9. Hướng dẫn chạy nhanh
 
-~~~powershell
+### Yêu cầu
+
+- Python và `requirements-transformer-runtime.txt`.
+- Java khả dụng trong môi trường.
+- VnCoreNLP có `VnCoreNLP-1.2.jar` và `models/wordsegmenter`.
+- Artifact V5 nằm đúng trong `model_artifacts/`.
+
+### Chạy local bằng PowerShell
+
+```powershell
 python -m pip install -r requirements-transformer-runtime.txt
 
 $env:NLP_BACKEND = 'transformer'
-$env:TRANSFORMER_ARTIFACT = "$PWD\model_artifacts\experimental_phobert_absa_v2_repaired"
+$env:TRANSFORMER_ARTIFACT = "$PWD\model_artifacts\experimental_phobert_absa_v5_hard_cases_final"
 $env:VNCORENLP_DIR = 'C:\vncorenlp'
 $env:ALLOW_EXPERIMENTAL_TRANSFORMER = 'true'
 $env:TRANSFORMER_DEVICE = 'auto'
@@ -157,39 +316,98 @@ $env:TRANSFORMERS_OFFLINE = '1'
 $env:HF_HUB_OFFLINE = '1'
 
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-~~~
+```
 
-Open http://127.0.0.1:8000.
+Truy cập:
 
-Demo credentials created by the bootstrap path:
+```text
+http://127.0.0.1:8000
+```
 
-~~~
-Customer: customer@example.com / customer123
-Seller:   seller@example.com / seller123
-~~~
+Tài khoản demo:
 
-### Docker and demo-mode caveat
+```text
+Khách hàng: customer@example.com / customer123
+Người bán:   seller@example.com / seller123
+```
 
-START.bat and docker compose up -d --build start the Docker application stack. However, this working tree currently does not contain model_artifacts/baseline_absa_v0/baseline.joblib, which the default demo backend requires.
+API phân tích trực tiếp:
 
-Therefore a successful end-to-end demo startup must not be claimed from this checkout unless that baseline artifact is restored or an explicit supported runtime configuration is supplied.
+```text
+POST /api/nlp/analyze
+```
 
-The current docker-compose.yml also does not mount VnCoreNLP or pass ALLOW_EXPERIMENTAL_TRANSFORMER into the container. The local Python command above is the accurate V2 runtime path today. Docker Transformer deployment requires a separately controlled Compose configuration change.
+Endpoint này phân tích trực tiếp và không persist feedback như luồng gửi feedback chính thức.
 
-## Train V5 on Kaggle
+---
 
-VnCoreNLP is attached to Kaggle as a separate input directory. Copy the project to /kaggle/working/project before installing dependencies or training.
+## 10. Vai trò của Rasa và lớp evidence
 
-Expected V5 output locations:
+Source Rasa nằm trong:
 
-~~~
-model_artifacts/preflight_phobert_v5_hard_cases_final/
-model_artifacts/experimental_phobert_absa_v5_hard_cases_final/
-~~~
+```text
+rasa_bot/
+```
 
-Run fresh preflight first:
+Khi được bật, custom action của Rasa gọi:
 
-~~~bash
+```text
+POST /api/nlp/analyze
+```
+
+Rasa có thể quản lý intent, rule, policy và luồng hội thoại nhưng **không có một bộ phân loại ABSA thứ hai**. Website mặc định không bắt buộc đi qua Rasa.
+
+Sau khi PhoBERT quyết định aspect và sentiment, lớp evidence có thể trích cụm từ giải thích, ví dụ:
+
+```text
+delivery -> negative
+Evidence: "giao hàng quá chậm"
+```
+
+Lớp evidence không được phép tự thêm, xóa hoặc thay đổi aspect/sentiment do PhoBERT quyết định.
+
+---
+
+## 11. Kiểm thử, Docker và cấu trúc project
+
+Audit hiện tại ghi nhận:
+
+```text
+38 passed
+```
+
+Các test tập trung vào feedback submission, persistence, feedback UI, response builder và một số logic tích hợp.
+
+Project có Dockerfile và Docker Compose, nhưng runtime V5 Transformer **chưa được xác minh là có thể tái tạo đầy đủ trên mọi máy chỉ bằng `docker compose up`**. Việc chạy trong container còn phụ thuộc vào Java, VnCoreNLP, Transformer dependencies, artifact và biến môi trường tương ứng.
+
+Cấu trúc chính:
+
+```text
+app/                FastAPI routes, services, templates và persistence
+nlp/                schema, preprocessing, model, training, evaluation, inference
+data/               SQLite và dữ liệu ứng dụng
+model_artifacts/    checkpoint, config, tokenizer, threshold và kết quả đánh giá
+docs/               tài liệu kiến trúc, dữ liệu và gán nhãn
+scripts/            chuẩn bị dữ liệu, diagnostic, audit và tiện ích
+rasa_bot/           tài nguyên Rasa tùy chọn
+```
+
+Tài liệu nên đọc khi cần tìm hiểu sâu hơn:
+
+1. `PROJECT_KNOWLEDGE.md`
+2. `AI_CHANGELOG.md`
+3. `docs/ANNOTATION_GUIDELINE.md`
+4. `docs/DATA_SOURCES_AND_MAPPING.md`
+5. `docs/ARCHITECTURE.md`
+6. `docs/MODEL_CARD.md`
+
+---
+
+## 12. Huấn luyện lại V5
+
+Trước khi huấn luyện cần chạy preflight để kiểm tra dữ liệu, taxonomy, hash và cấu hình.
+
+```bash
 python -m nlp.training.preflight_transformer \
   --train nlp/data/experimental_v2/train.jsonl \
   --dev nlp/data/experimental_v2/dev.jsonl \
@@ -198,18 +416,18 @@ python -m nlp.training.preflight_transformer \
   --cuda-steps 20 \
   --forward-steps 8 \
   --mini-samples 64
-~~~
+```
 
-Training is allowed only when:
+Chỉ huấn luyện khi:
 
-~~~
+```text
 overall_preflight = PASS
 full_training_allowed = true
-~~~
+```
 
-Then run one clean experimental job:
+Lệnh huấn luyện:
 
-~~~bash
+```bash
 python -m nlp.training.train_transformer \
   --backbone phobert \
   --train nlp/data/experimental_v2/train.jsonl \
@@ -222,49 +440,36 @@ python -m nlp.training.train_transformer \
   --device cuda \
   --experimental \
   --preflight-report model_artifacts/preflight_phobert_v5_hard_cases_final/preflight_transformer_report.json
-~~~
+```
 
-After training, inspect saved Dev metrics, per-aspect thresholds, and fixed multi-aspect diagnostics. Do not tune thresholds manually or use held-out Test to choose V5.
+Checkpoint và threshold chỉ được lựa chọn trên Train/Dev. Natural Test không được dùng để lựa chọn mô hình hoặc điều chỉnh threshold.
 
-## Evaluation
+---
 
-The primary selection metric is Dev strict-union Pair Macro-F1 over aspect#sentiment pairs. The project also records Pair Micro-F1, aspect F1, conditional sentiment F1, Exact Match, per-aspect metrics, threshold curves, and error slices.
+## 13. Hạn chế và hướng phát triển
 
-Model selection and threshold tuning use Train/Dev only. Final held-out Test is reserved for a separately authorized scientific protocol after data, architecture, and selection policy are frozen.
+Hạn chế chính của phiên bản hiện tại:
 
-To build the Seller Dev Validation dashboard from a frozen artifact without running inference or reading Test:
+- Chưa có corpus sáu aspect được con người gán nhãn và thẩm định độc lập để làm scientific-gold evaluation.
+- Natural Test có rất ít mẫu `customer_service` và `other`.
+- Balanced V2 chỉ là diagnostic cân bằng, chưa phải human-gold Test.
+- Confidence sigmoid/softmax chưa được xem là xác suất thực tế đã calibration.
+- Docker V5 chưa được chứng minh fully reproducible trên mọi môi trường.
+- API phân tích trực tiếp cần thêm access control/rate limiting nếu triển khai production.
 
-~~~powershell
-python scripts/build_dev_evaluation.py model_artifacts/experimental_phobert_absa_v5_hard_cases_final
-~~~
+Hướng phát triển ưu tiên:
 
-This creates `evaluation_dev/` with metric tables and plots for training history, Dev Pair Macro-F1, aspect and sentiment F1, support, conditional sentiment confusion, aspect-sentiment pair F1, and Dev threshold curves. These results must remain labelled as Dev validation / experimental, not held-out Test results.
+1. Xây dựng tập dữ liệu human-verified với nhiều annotator và quy trình adjudication.
+2. Đóng băng Train/Dev/Test chuẩn và thực hiện scientific-final evaluation.
+3. Bổ sung calibration và chính sách abstention.
+4. Tăng dữ liệu cho `customer_service`, `other`, `neutral`, `mixed` và `no_aspect`.
+5. Chuẩn hóa Docker runtime để provision đầy đủ Java, VnCoreNLP và Transformer dependencies.
+6. Hoàn thiện bảo mật cho API nếu triển khai ngoài môi trường học tập.
 
-## Project Structure
+---
 
-~~~
-app/                FastAPI routes, services, templates, persistence
-nlp/                schema, preprocessing, models, training, evaluation, inference
-data/               SQLite data and catalog-related data
-model_artifacts/    model checkpoints, reports, thresholds, audit artifacts
-docs/               annotation, provenance, architecture, model documentation
-scripts/            data preparation, diagnostics, audits, utility CLIs
-rasa_bot/           optional Rasa resources
-~~~
+## Ghi chú
 
-## Documentation
+PhoBERT V5 là runtime thực nghiệm hiện tại. Các phiên bản V1-V4 chỉ được giữ để truy vết quá trình phát triển và không nên dùng số liệu lịch sử của chúng thay cho kết quả V5.
 
-Read these before modifying the project:
-
-1. [PROJECT_KNOWLEDGE.md](PROJECT_KNOWLEDGE.md) - architecture, runtime contract, V3-V5 state, and reporting language.
-2. [AI_CHANGELOG.md](AI_CHANGELOG.md) - chronological changes, checks, and known boundaries.
-3. [Annotation guideline](docs/ANNOTATION_GUIDELINE.md) - aspect and sentiment labeling rules.
-4. [Data sources and mapping](docs/DATA_SOURCES_AND_MAPPING.md) - data source and mapping constraints.
-5. [Architecture](docs/ARCHITECTURE.md) - module boundaries.
-6. [Model card](docs/MODEL_CARD.md) - model claims and limitations.
-
-## Scientific and Reporting Boundary
-
-> The system has a verified experimental PhoBERT V2 runtime and a separate V5 data-improvement experiment in preparation. V5 has not yet been preflighted, trained, deployed, or evaluated on held-out Test data. Recent augmentation is AI-assisted experimental data, not a human-verified scientific-gold corpus.
-
-No paid LLM or API is required for the application, model inference, or training pipeline.
+Các kết quả Dev, Natural Test và Balanced V2 phục vụ những mục đích đánh giá khác nhau. Project trình bày chúng đúng phạm vi và **không tuyên bố scientific-final** khi chưa có tập dữ liệu human-gold phù hợp.
