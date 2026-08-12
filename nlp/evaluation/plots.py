@@ -42,13 +42,20 @@ def _style_matrix_axes(ax, rows: int, cols: int) -> None:
     ax.tick_params(which="minor", bottom=False, left=False)
 
 
-def plot_dataset_distribution(records: Sequence[Mapping], path: Path) -> None:
+def plot_dataset_distribution(
+    records: Sequence[Mapping],
+    path: Path,
+    *,
+    title: str = "Phân bố khía cạnh",
+    ylabel: str = "Số lượt gán nhãn",
+) -> None:
     counts = Counter(a["aspect"] for r in records for a in r.get("annotations", []))
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    ax.bar([ASPECT_VI[a] for a in ASPECTS], [counts[a] for a in ASPECTS])
-    ax.set_ylabel("Số lượt gán nhãn")
-    ax.set_title("Phân bố khía cạnh")
+    bars = ax.bar([ASPECT_VI[a] for a in ASPECTS], [counts[a] for a in ASPECTS])
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
     ax.tick_params(axis="x", rotation=25)
+    ax.bar_label(bars, padding=3, fontsize=8)
     _save(fig, path)
 
 
@@ -99,6 +106,44 @@ def plot_aspect_f1(metrics: Mapping, path: Path) -> None:
     ax.set_ylabel("F1")
     ax.set_title("F1 theo khía cạnh")
     ax.tick_params(axis="x", rotation=25)
+    _save(fig, path)
+
+
+def plot_sentiment_f1(metrics: Mapping, path: Path) -> None:
+    values = [metrics.get("per_sentiment", {}).get(sentiment, {}).get("f1", 0.0) for sentiment in SENTIMENTS]
+    fig, ax = plt.subplots(figsize=(6.8, 4.2))
+    bars = ax.bar(
+        [SENTIMENT_VI[sentiment] for sentiment in SENTIMENTS],
+        values,
+        color=["#059669", "#64748b", "#e11d48", "#d97706"],
+    )
+    ax.set_ylim(0, 1.03)
+    ax.set_ylabel("F1")
+    ax.set_title("F1 theo cảm xúc")
+    ax.bar_label(bars, labels=[f"{value:.3f}" for value in values], padding=3, fontsize=8)
+    _save(fig, path)
+
+
+def plot_aspect_sentiment_f1(metrics: Mapping, path: Path) -> None:
+    pair_metrics = metrics.get("per_pair", {})
+    matrix = np.zeros((len(ASPECTS), len(SENTIMENTS)), dtype=float)
+    support = np.zeros((len(ASPECTS), len(SENTIMENTS)), dtype=int)
+    for row, aspect in enumerate(ASPECTS):
+        for col, sentiment in enumerate(SENTIMENTS):
+            item = pair_metrics.get(f"{aspect}#{sentiment}", {})
+            matrix[row, col] = float(item.get("f1", 0.0))
+            support[row, col] = int(item.get("support", 0))
+    fig, ax = plt.subplots(figsize=(8, 5.2))
+    image = ax.imshow(matrix, vmin=0, vmax=1, cmap=ASPECT_SENTIMENT_CMAP, aspect="auto", interpolation="nearest")
+    ax.set_xticks(range(len(SENTIMENTS)), [SENTIMENT_VI[value] for value in SENTIMENTS])
+    ax.set_yticks(range(len(ASPECTS)), [ASPECT_VI[value] for value in ASPECTS])
+    ax.set_title("F1 theo cặp khía cạnh × cảm xúc")
+    for row in range(len(ASPECTS)):
+        for col in range(len(SENTIMENTS)):
+            label = "-" if support[row, col] == 0 else f"{matrix[row, col]:.2f}"
+            ax.text(col, row, label, ha="center", va="center", color=_cell_text_color(matrix[row, col], 1.0), fontsize=8, fontweight="600")
+    _style_matrix_axes(ax, len(ASPECTS), len(SENTIMENTS))
+    fig.colorbar(image, ax=ax, fraction=0.035, label="F1")
     _save(fig, path)
 
 

@@ -2,7 +2,7 @@
 {% block title %}Đánh giá mô hình · Seller{% endblock %}
 {% block header %}
 <div class="eyebrow"><span class="eyebrow-dot"></span> Model Lab</div>
-<h1>Đánh giá mô hình</h1>
+<h1>{% if evaluation_is_balanced %}Đánh giá Balanced Test{% else %}Đánh giá mô hình{% endif %}</h1>
 <p class="muted">Trang chỉ đọc evaluation artifact đã lưu; mở dashboard không chạy model.</p>
 {% endblock %}
 {% block content %}
@@ -13,12 +13,20 @@
 </div>
 {% else %}
 {% set m = evaluation_metrics %}
+<div class="panel animate-fade-in-up" style="margin-bottom:18px">
+    {% if natural_evaluation_available %}<a href="/seller/model-evaluation">Test phân bổ tự nhiên</a>{% endif %}
+    {% if natural_evaluation_available and balanced_evaluation_available %}<span class="muted"> · </span>{% endif %}
+    {% if balanced_evaluation_available %}<a href="/seller/model-evaluation?view=balanced">Balanced Diagnostic V2</a>{% endif %}
+</div>
 {% if evaluation_kind == 'dev' %}
 <div class="eval-warning animate-fade-in-up">
     <b>DEV VALIDATION / EXPERIMENTAL.</b> Checkpoint và threshold đều được chọn trên Dev. Các chỉ số dưới đây hữu ích để theo dõi training, nhưng không được trình bày là kết quả held-out Test hay scientific final.
 </div>
 {% elif experimental %}
 <div class="eval-warning animate-fade-in-up"><b>EXPERIMENTAL / NON-SCIENTIFIC.</b> Kết quả này không phải scientific final trên human-verified gold.</div>
+{% endif %}
+{% if evaluation_is_balanced %}
+<div class="eval-warning animate-fade-in-up"><b>BALANCED DIAGNOSTIC.</b> Sáu aspect được cân bằng để so sánh độ bền vững của model. Đây là candidate chưa human-verified gold, không thay thế kết quả Test phân bổ tự nhiên.</div>
 {% endif %}
 
 <div class="panel animate-fade-in-up" style="margin-bottom:18px">
@@ -32,6 +40,7 @@
     <div class="metric"><small>Aspect Macro-F1</small><strong>{{ '%.3f'|format(m.get('aspect_macro_f1', 0)) }}</strong></div>
     <div class="metric"><small>Sentiment Macro-F1</small><strong>{{ '%.3f'|format(m.get('sentiment_macro_f1', 0)) }}</strong></div>
     <div class="metric"><small>Exact Match</small><strong>{{ '%.3f'|format(m.get('exact_match', 0)) }}</strong></div>
+    {% if m.get('no_aspect', {}).get('support', 0) %}<div class="metric"><small>Nhận diện no-aspect</small><strong>{{ '%.3f'|format(m.get('no_aspect', {}).get('accuracy', 0)) }}</strong></div>{% endif %}
 </div>
 
 <div class="panel-grid animate-fade-in-up" style="animation-delay:.2s">
@@ -62,6 +71,51 @@
         </div>
     </section>
 </div>
+
+{% if m.get('no_aspect', {}).get('support', 0) or m.get('error_analysis') %}
+<div class="panel-grid animate-fade-in-up" style="margin-top:18px;animation-delay:.25s">
+    {% if m.get('no_aspect', {}).get('support', 0) %}
+    <section class="panel">
+        <h2>Kiểm tra từ chối nhãn</h2>
+        <p><b>{{ m.get('no_aspect', {}).get('correct_abstentions', 0) }}</b> / {{ m.get('no_aspect', {}).get('support', 0) }} feedback không có aspect được model để trống đúng.</p>
+        <p class="muted">False-positive rate: {{ '%.3f'|format(m.get('no_aspect', {}).get('false_positive_rate', 0)) }}</p>
+    </section>
+    {% endif %}
+    {% if m.get('error_analysis') %}
+    <section class="panel">
+        <h2>Tóm tắt lỗi end-to-end</h2>
+        <p><b>{{ m.get('error_analysis', {}).get('error_records', 0) }}</b> feedback có tập nhãn dự đoán khác nhãn gold.</p>
+        <p class="muted">Chi tiết từng lỗi được lưu trong <code>errors.json</code> của evaluation artifact.</p>
+    </section>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if m.get('error_analysis') %}
+<details class="panel animate-fade-in-up" style="margin-top:18px;animation-delay:.28s">
+    <summary><b>Những nhãn bị bỏ sót và gán thừa nhiều nhất</b></summary>
+    <div class="panel-grid" style="margin-top:16px">
+        <section>
+            <h3>Model bỏ sót</h3>
+            <div class="table-wrap"><table><thead><tr><th>Cặp nhãn</th><th>Số lần</th></tr></thead><tbody>
+            {% for item in m.get('error_analysis', {}).get('top_missing_pairs', []) %}
+                {% set parts = item.get('label', '').split('#') %}
+                <tr><td>{{ aspect_vi.get(parts[0], parts[0]) }} · {{ sentiment_vi.get(parts[1], parts[1]) }}</td><td>{{ item.get('count', 0) }}</td></tr>
+            {% endfor %}
+            </tbody></table></div>
+        </section>
+        <section>
+            <h3>Model gán thừa</h3>
+            <div class="table-wrap"><table><thead><tr><th>Cặp nhãn</th><th>Số lần</th></tr></thead><tbody>
+            {% for item in m.get('error_analysis', {}).get('top_extra_pairs', []) %}
+                {% set parts = item.get('label', '').split('#') %}
+                <tr><td>{{ aspect_vi.get(parts[0], parts[0]) }} · {{ sentiment_vi.get(parts[1], parts[1]) }}</td><td>{{ item.get('count', 0) }}</td></tr>
+            {% endfor %}
+            </tbody></table></div>
+        </section>
+    </div>
+</details>
+{% endif %}
 
 <div class="chart-grid animate-fade-in-up" style="margin-top:18px;animation-delay:.3s">
     {% for p in plots %}

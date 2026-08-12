@@ -63,7 +63,7 @@ def seller_products(request:Request,db:Session=Depends(get_db)):
     return request.app.state.templates.TemplateResponse(request=request, name="seller_products.html", context=seller_ctx(request,db,products=product_analytics(db,100)))
 
 @router.get("/model-evaluation")
-def model_evaluation(request:Request,db:Session=Depends(get_db)):
+def model_evaluation(request:Request,db:Session=Depends(get_db),view:str="natural"):
     if not seller_guard(request,db): return RedirectResponse("/seller/login",status_code=303)
 
     candidates = []
@@ -76,14 +76,23 @@ def model_evaluation(request:Request,db:Session=Depends(get_db)):
         if not candidate.is_absolute(): candidate = ROOT / candidate
         if candidate.exists(): candidates.append(candidate)
 
+    requested_balanced = view == "balanced"
+    natural_available = any((candidate / "evaluation" / "metrics.json").exists() for candidate in candidates)
+    balanced_available = any((candidate / "evaluation_balanced_v2" / "metrics.json").exists() for candidate in candidates)
     artifact_root = None
     eval_dir = None
     evaluation_kind = None
-    for candidate in candidates:
-        if (candidate / "evaluation" / "metrics.json").exists():
-            artifact_root, eval_dir, evaluation_kind = candidate, candidate / "evaluation", "final"
-            break
-    if eval_dir is None:
+    if requested_balanced:
+        for candidate in candidates:
+            if (candidate / "evaluation_balanced_v2" / "metrics.json").exists():
+                artifact_root, eval_dir, evaluation_kind = candidate, candidate / "evaluation_balanced_v2", "balanced"
+                break
+    else:
+        for candidate in candidates:
+            if (candidate / "evaluation" / "metrics.json").exists():
+                artifact_root, eval_dir, evaluation_kind = candidate, candidate / "evaluation", "final"
+                break
+    if eval_dir is None and not requested_balanced:
         for candidate in candidates:
             if (candidate / "evaluation_dev" / "metrics.json").exists():
                 artifact_root, eval_dir, evaluation_kind = candidate, candidate / "evaluation_dev", "dev"
@@ -109,6 +118,16 @@ def model_evaluation(request:Request,db:Session=Depends(get_db)):
         )
     plot_names = (
         [
+            ("dataset_distribution.png", "Balanced Test aspect distribution"),
+            ("aspect_sentiment_heatmap.png", "Balanced Test aspect by sentiment"),
+            ("review_length_distribution.png", "Balanced Test feedback length"),
+            ("aspect_f1.png", "F1 by aspect"),
+            ("sentiment_f1.png", "F1 by sentiment"),
+            ("aspect_sentiment_f1.png", "F1 by aspect and sentiment"),
+            ("sentiment_confusion.png", "Sentiment confusion matrix"),
+        ]
+        if evaluation_kind == "balanced" else
+        [
             ("train_dev_loss.png", "Train / Dev loss"),
             ("dev_pair_f1.png", "Strict-union Pair Macro-F1 theo epoch"),
             ("aspect_f1.png", "F1 theo khía cạnh"),
@@ -119,7 +138,7 @@ def model_evaluation(request:Request,db:Session=Depends(get_db)):
             ("threshold_f1.png", "Threshold tối ưu trên Dev"),
         ]
         if evaluation_kind == "dev" else [
-            ("dataset_distribution.png","Phân bố dữ liệu"),
+            ("dataset_distribution.png","Phân bố aspect trong Train"),
             ("aspect_sentiment_heatmap.png","Khía cạnh × cảm xúc"),
             ("train_dev_loss.png","Train / Dev Loss"),
             ("dev_pair_f1.png","Dev Pair Macro-F1"),
@@ -145,6 +164,9 @@ def model_evaluation(request:Request,db:Session=Depends(get_db)):
             no_evaluation=False, evaluation_kind=evaluation_kind,
             evaluation_metrics=metrics.get("dev", {}) if evaluation_kind == "dev" else metrics.get("test", {}),
             experimental=metrics.get("scientific_final") is not True,
+            evaluation_is_balanced=evaluation_kind == "balanced",
+            natural_evaluation_available=natural_available,
+            balanced_evaluation_available=balanced_available,
         ),
     )
 

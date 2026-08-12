@@ -7,7 +7,16 @@
 {% endblock %}
 {% block content %}
 <div class="table-wrap animate-fade-in-up">
-    <table>
+    <table class="seller-feedback-table">
+        <colgroup>
+            <col class="feedback-col-id">
+            <col class="feedback-col-product">
+            <col class="feedback-col-customer">
+            <col class="feedback-col-rating">
+            <col class="feedback-col-text">
+            <col class="feedback-col-analysis">
+            <col class="feedback-col-status">
+        </colgroup>
         <thead><tr><th>ID</th><th>Sản phẩm</th><th>Khách</th><th>Rating</th><th>Feedback</th><th>Phân tích</th><th>Trạng thái</th></tr></thead>
         <tbody>
             {% for r in feedbacks %}
@@ -17,7 +26,11 @@
                 <td>{{ r.user.name }}</td>
                 <td>★ {{ r.rating }}</td>
                 <td>{{ r.text_raw[:110] }}</td>
-                <td>{% for a in r.analyses %}<span class="analysis-chip sent-{{ a.sentiment }}">{{ aspect_vi[a.aspect] }} · {{ sentiment_vi[a.sentiment] }}</span>{% endfor %}</td>
+                <td>
+                    <div class="feedback-analysis-chips">
+                    {% for a in r.analyses %}<span class="analysis-chip sent-{{ a.sentiment }}">{{ aspect_vi[a.aspect] }} · {{ sentiment_vi[a.sentiment] }}</span>{% endfor %}
+                    </div>
+                </td>
                 <td><a href="/seller/feedback/{{ r.id }}" class="table-link">{{ r.analysis_status }} →</a></td>
             </tr>
             {% endfor %}

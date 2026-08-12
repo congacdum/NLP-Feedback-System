@@ -176,7 +176,7 @@ def main() -> None:
             plot_threshold_curves, plot_pr_curves, plot_model_comparison,
             plot_challenge_slices, plot_learning_curve,
         )
-        plot_dataset_distribution(train, plots / "dataset_distribution.png")
+        plot_dataset_distribution(train, plots / "dataset_distribution.png", title="Phân bố khía cạnh trong Train")
         plot_aspect_sentiment_heatmap(train, plots / "aspect_sentiment_heatmap.png")
         plot_review_length(train, plots / "review_length_distribution.png")
         plot_aspect_f1(selected_test_metrics, plots / "aspect_f1.png")

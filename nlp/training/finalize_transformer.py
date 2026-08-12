@@ -193,7 +193,7 @@ def main() -> None:
     if challenge:
         write_jsonl(eval_dir / "challenge_predictions.jsonl", challenge_pred)
 
-    plot_dataset_distribution(train, plots / "dataset_distribution.png")
+    plot_dataset_distribution(train, plots / "dataset_distribution.png", title="Phân bố khía cạnh trong Train")
     plot_aspect_sentiment_heatmap(train, plots / "aspect_sentiment_heatmap.png")
     plot_review_length(train, plots / "review_length_distribution.png")
     plot_aspect_f1(test_metrics, plots / "aspect_f1.png")

@@ -131,6 +131,21 @@ def compute_conditional_sentiment_metrics(gold: Sequence[Mapping], preds: Sequen
     }
 
 
+def compute_no_aspect_metrics(gold: Sequence[Mapping], preds: Sequence[Mapping]) -> Dict:
+    """Measure whether the model correctly abstains on feedback with no aspect."""
+    indices = [i for i, row in enumerate(gold) if not row.get("annotations", [])]
+    if not indices:
+        return {"support": 0, "correct_abstentions": 0, "accuracy": 0.0, "false_positive_rate": 0.0}
+    correct = sum(1 for i in indices if not preds[i].get("aspects", []))
+    support = len(indices)
+    return {
+        "support": support,
+        "correct_abstentions": correct,
+        "accuracy": float(correct / support),
+        "false_positive_rate": float((support - correct) / support),
+    }
+
+
 def evaluate_records(gold: Sequence[Mapping], preds: Sequence[Mapping]) -> Dict:
     if len(gold) != len(preds):
         raise ValueError("gold and preds must have the same length")
@@ -138,6 +153,7 @@ def evaluate_records(gold: Sequence[Mapping], preds: Sequence[Mapping]) -> Dict:
     result.update(compute_pair_metrics(gold, preds))
     result.update(compute_aspect_metrics(gold, preds))
     result.update(compute_conditional_sentiment_metrics(gold, preds))
+    result["no_aspect"] = compute_no_aspect_metrics(gold, preds)
     result["n_samples"] = len(gold)
     return result
 

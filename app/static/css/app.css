@@ -716,8 +716,29 @@ label { display:block; font-size:13px; font-weight:600; margin:14px 0 7px; color
     justify-content:space-between;
     align-items:center;
     margin-bottom:34px;
+    gap:24px;
 }
 .seller-title h1 { font-size:42px }
+.seller-user-badge {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+    flex:0 0 auto;
+    min-width:0;
+}
+.review-avatar {
+    display:inline-flex;
+    flex:0 0 auto;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:var(--primary);
+    color:#fff;
+    font-weight:700;
+    line-height:1;
+    box-shadow:0 4px 12px rgba(79,70,229,.24);
+}
 
 /* Metrics - Gradient Decorative Circles */
 .metric-grid {
@@ -807,6 +828,36 @@ th {
 }
 tr { transition:all .2s }
 tr:hover td { background:rgba(79,70,229,.03); box-shadow:inset 3px 0 0 var(--primary) }
+
+/* Feedback rows carry multi-label ABSA results, so the analysis cell needs a
+   stable wrapping layout instead of letting inline chips compete for width. */
+.seller-feedback-table {
+    min-width:1180px;
+    table-layout:fixed;
+}
+.feedback-col-id { width:5% }
+.feedback-col-product { width:18% }
+.feedback-col-customer { width:11% }
+.feedback-col-rating { width:8% }
+.feedback-col-text { width:29% }
+.feedback-col-analysis { width:23% }
+.feedback-col-status { width:6% }
+.seller-feedback-table td { overflow-wrap:anywhere }
+.seller-feedback-table .analysis-chip {
+    display:inline-flex;
+    align-items:center;
+    max-width:100%;
+    white-space:normal;
+    overflow-wrap:anywhere;
+}
+.feedback-analysis-chips {
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    gap:6px;
+    min-width:0;
+}
+.seller-feedback-table .table-link { white-space:nowrap }
 
 /* Aspect Row */
 .aspect-row {

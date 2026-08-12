@@ -1,6 +1,8 @@
 __pycache__/
 .pytest_cache/
 .pytest-*/
+.runtime/
+tmp/
 *.py[cod]
 *$py.class
 
