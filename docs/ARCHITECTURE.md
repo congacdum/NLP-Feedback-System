@@ -179,7 +179,7 @@ Rasa is retained only for optional conversational development:
 - rule/dialogue flow;
 - custom action calling the same FastAPI `/api/nlp/analyze` endpoint.
 
-Rasa does not contain a duplicate sentiment/topic classifier. It is not part of the customer feedback ingestion path: the floating state-machine chat and its routes are retired. Normal app startup does not require Rasa; `START_WITH_RASA.bat` trains and launches the optional Rasa profile.
+Rasa does not contain a duplicate sentiment/topic classifier. It is not part of the customer feedback ingestion path: the floating state-machine chat and its routes are retired. Normal app startup does not require Rasa; `scripts/windows/START_WITH_RASA.bat` trains and launches the optional Rasa profile.
 
 ## 9. Product images
 

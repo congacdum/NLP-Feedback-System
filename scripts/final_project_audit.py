@@ -18,9 +18,9 @@ REQUIRED = [
     "AI_CHANGELOG.md",
     "Dockerfile",
     "docker-compose.yml",
-    "START.bat",
-    "START_WITH_RASA.bat",
-    "STOP.bat",
+    "scripts/windows/START.bat",
+    "scripts/windows/START_WITH_RASA.bat",
+    "scripts/windows/STOP.bat",
     "app/main.py",
     "app/services/nlp_service.py",
     "app/services/feedback_service.py",
@@ -118,14 +118,14 @@ def main() -> None:
 
     compose_text = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
     endpoints_text = (ROOT / "rasa_bot/endpoints.yml").read_text(encoding="utf-8")
-    start_rasa = (ROOT / "START_WITH_RASA.bat").read_text(encoding="utf-8")
+    start_rasa = (ROOT / "scripts/windows/START_WITH_RASA.bat").read_text(encoding="utf-8")
     static_issues = []
     if "./rasa_bot:/app" not in compose_text:
         static_issues.append("Rasa project volume missing")
     if 'http://rasa-actions:5055/webhook' not in endpoints_text:
         static_issues.append("Rasa action endpoint does not target compose service name")
     if "rasa train" not in start_rasa:
-        static_issues.append("START_WITH_RASA.bat does not train before run")
+        static_issues.append("scripts/windows/START_WITH_RASA.bat does not train before run")
     if "TRANSFORMER_ARTIFACT" not in compose_text or "REQUIREMENTS_FILE" not in compose_text:
         static_issues.append("Compose does not expose the frozen Transformer/runtime dependency configuration")
     analyzer_text = (ROOT / "nlp/inference/transformer_analyzer.py").read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+cd /d "%~dp0\..\.."
 echo [1/3] Starting NLP Feedback System...
 docker compose up -d --build
 if errorlevel 1 goto :error
