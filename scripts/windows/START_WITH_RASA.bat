@@ -1,6 +1,6 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+cd /d "%~dp0\..\.."
 echo [1/3] Building main app...
 docker compose build app
 if errorlevel 1 goto :error
